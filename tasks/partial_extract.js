@@ -1,6 +1,6 @@
 /*
  * grunt-partial-extract
- * https://github.com/tilman/partial-extract
+ * https://github.com/tilmanjusten/grunt-partial-extract
  *
  * Copyright (c) 2014 Tilman Justen
  * Licensed under the MIT license.
@@ -63,10 +63,60 @@ module.exports = function(grunt) {
 
       // Write blocks to separate files
       blocks.forEach(function (b) {
-        grunt.file.write(options.dest + b.dest, b.lines.join("\r\n"));
+        var lines = b.lines.map(properIndentation);
+        var leadingWhitespace = lines.map(countWhitespace);
+        var crop = leadingWhitespace.reduce(getLeadingWhitespace);
+
+        lines = trimLines(lines, crop);
+
+        grunt.file.write(options.dest + b.dest, lines.join("\r\n"));
         grunt.log.writeln('File "' + options.dest + b.dest + '" created.');
       });
     });
   });
 
+  /**
+   * replace tabs by four spaces
+   *
+   * @param line
+   * @return string
+   */
+  function properIndentation(line) {
+    return line.replace(/\t/, '    ');
+  }
+
+  /**
+   * count leading whitespace chars
+   *
+   * @param line
+   * @return integer
+   */
+  function countWhitespace(line) {
+    // return a somewhat high value for empty lines
+    return line.length ? line.match(/^\s*/)[0].length : 9999;
+  }
+
+  /**
+   * get lowest value of leading whitespace in a given block
+   *
+   * @param previous
+   * @param current
+   * @returns integer
+   */
+  function getLeadingWhitespace(previous, current) {
+    return previous <= current ? previous : current;
+  }
+
+  /**
+   * trim given number of leading characters
+   *
+   * @param lines
+   * @param num Number of chars to be removed
+   * @returns Array
+   */
+  function trimLines(lines, num) {
+    return lines.map(function (line) {
+      return line.substr(num);
+    });
+  }
 };
