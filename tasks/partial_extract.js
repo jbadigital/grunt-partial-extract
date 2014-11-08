@@ -62,15 +62,15 @@ module.exports = function(grunt) {
       grunt.log.writeln("Extracted blocks", blocks.length);
 
       // Write blocks to separate files
-      blocks.forEach(function (b) {
-        var lines = b.lines.map(properIndentation);
+      blocks.forEach(function (block) {
+        var lines = block.lines.map(properIndentation);
         var leadingWhitespace = lines.map(countWhitespace);
         var crop = leadingWhitespace.reduce(getLeadingWhitespace);
 
         lines = trimLines(lines, crop);
 
-        grunt.file.write(options.dest + b.dest, lines.join("\r\n"));
-        grunt.log.writeln('File "' + options.dest + b.dest + '" created.');
+        grunt.file.write(options.dest + block.dest, lines.join("\r\n"));
+        grunt.log.writeln('File "' + options.dest + block.dest + '" created.');
       });
     });
   });
