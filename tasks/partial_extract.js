@@ -15,32 +15,26 @@ module.exports = function(grunt) {
 
   grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to distinct file.', function() {
     // Merge task-specific and/or target-specific options with these defaults.
-    var options = this.options({
-      punctuation: '.',
-      separator: ', ',
-      newline: '\n'
-    });
-
+    var options = this.options({});
     var patternbegin = /\<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*--\>/;
     var patternend = /\<\!--\s*endextract\s*--\>/;
 
-    grunt.log.writeln('');
-    grunt.log.writeln('Destination: ' + options.dest);
-    grunt.log.writeln('Files: ' + this.files.length);
-    grunt.log.writeln('');
+    grunt.verbose.writeln('Destination: ' + options.dest);
+    grunt.verbose.writeln('Files: ' + this.files.length);
+    grunt.verbose.writeln();
 
     // Iterate over all specified file groups.
     this.files.forEach(function(f) {
-      var content = grunt.file.read(f.src);
+      var content = grunt.util.normalizelf(grunt.file.read(f.src));
 
       if (!patternbegin.test(content)) {
-        grunt.log.writeln('Nothing found in file ' + f.src + ', continue...');
-        grunt.log.writeln('');
+        grunt.log.errorlns('No partials in file ' + f.src);
+        grunt.verbose.writeln();
 
         return;
       }
 
-      var lines = content.replace(/\r\n/g, '\n').split(/\n/);
+      var lines = content.split(grunt.util.linefeed);
       var blocks = [];
       var block;
       var add = false;
@@ -63,7 +57,7 @@ module.exports = function(grunt) {
         }
       });
 
-      grunt.log.writeln('Found ' + blocks.length + ' partials in file ' + f.src);
+      grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + f.src);
 
       // Write blocks to separate files
       blocks.forEach(function (block) {
@@ -73,11 +67,10 @@ module.exports = function(grunt) {
 
         lines = trimLines(lines, crop);
 
-        grunt.file.write(options.dest + block.dest, lines.join(options.newline));
-        grunt.log.writeln('Created "' + block.dest + '"');
+        grunt.file.write(options.dest + block.dest, lines.join(grunt.util.linefeed));
       });
 
-      grunt.log.writeln('');
+      grunt.verbose.writeln();
     });
   });
 
