@@ -27,11 +27,11 @@ module.exports = function(grunt) {
     grunt.verbose.writeln();
 
     // Iterate over all specified file groups.
-    this.files.forEach(function(f) {
-      var content = grunt.util.normalizelf(grunt.file.read(f.src));
+    this.files.forEach(function(file) {
+      var content = grunt.util.normalizelf(grunt.file.read(file.src));
 
       if (!options.patternbegin.test(content)) {
-        grunt.log.errorlns('No partials in file ' + f.src);
+        grunt.log.errorlns('No partials in file ' + file.src);
         grunt.verbose.writeln();
 
         return;
@@ -40,7 +40,7 @@ module.exports = function(grunt) {
       var lines = content.split(grunt.util.linefeed);
       var blocks = getPartials(lines);
 
-      grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + f.src);
+      grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
 
       // Write blocks to separate files
       blocks.forEach(function (block) {
