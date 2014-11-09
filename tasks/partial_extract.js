@@ -13,11 +13,14 @@ module.exports = function(grunt) {
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
 
+  var options = {};
+
   grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to distinct file.', function() {
     // Merge task-specific and/or target-specific options with these defaults.
-    var options = this.options({});
-    var patternbegin = /\<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*--\>/;
-    var patternend = /\<\!--\s*endextract\s*--\>/;
+    options = this.options({
+      patternbegin: /\<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*--\>/,
+      patternend: /\<\!--\s*endextract\s*--\>/
+    });
 
     grunt.verbose.writeln('Destination: ' + options.dest);
     grunt.verbose.writeln('Files: ' + this.files.length);
@@ -27,7 +30,7 @@ module.exports = function(grunt) {
     this.files.forEach(function(f) {
       var content = grunt.util.normalizelf(grunt.file.read(f.src));
 
-      if (!patternbegin.test(content)) {
+      if (!options.patternbegin.test(content)) {
         grunt.log.errorlns('No partials in file ' + f.src);
         grunt.verbose.writeln();
 
@@ -35,27 +38,7 @@ module.exports = function(grunt) {
       }
 
       var lines = content.split(grunt.util.linefeed);
-      var blocks = [];
-      var block;
-      var add = false;
-      var match;
-
-      // Import blocks from file
-      lines.forEach(function (line) {
-        if (line.match(patternend)) {
-          add = false;
-          blocks.push(block);
-        }
-
-        if (add) {
-          block.lines.push(line);
-        }
-
-        if (match = line.match(patternbegin)) {
-          add = true;
-          block = {dest: match[1], lines: []};
-        }
-      });
+      var blocks = getPartials(lines);
 
       grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + f.src);
 
@@ -73,6 +56,38 @@ module.exports = function(grunt) {
       grunt.verbose.writeln();
     });
   });
+
+  /**
+   * extract partials
+   *
+   * @param lines
+   * @returns {Array}
+   */
+  function getPartials(lines) {
+    var block;
+    var add = false;
+    var match;
+    var blocks = [];
+
+    // Import blocks from file
+    lines.forEach(function (line) {
+      if (line.match(options.patternend)) {
+        add = false;
+        blocks.push(block);
+      }
+
+      if (add) {
+        block.lines.push(line);
+      }
+
+      if (match = line.match(options.patternbegin)) {
+        add = true;
+        block = {dest: match[1], lines: []};
+      }
+    });
+
+    return blocks;
+  }
 
   /**
    * replace tabs by four spaces
