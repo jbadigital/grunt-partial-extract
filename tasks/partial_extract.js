@@ -18,8 +18,8 @@ module.exports = function(grunt) {
   grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to distinct file.', function() {
     // Merge task-specific and/or target-specific options with these defaults.
     options = this.options({
-      patternbegin: /\<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*--\>/,
-      patternend: /\<\!--\s*endextract\s*--\>/
+      patternbegin: /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*-->/,
+      patternend: /<\!--\s*endextract\s*-->/
     });
 
     grunt.log.writeln('Destination: ' + options.dest);
