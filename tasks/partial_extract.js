@@ -25,6 +25,7 @@ module.exports = function(grunt) {
     grunt.verbose.writeln('Destination: ' + options.dest);
     grunt.verbose.writeln('Files: ' + this.files.length);
     grunt.verbose.writeln();
+    var existingFiles = [];
 
     // Iterate over all specified file groups.
     this.files.forEach(function(file) {
@@ -43,7 +44,13 @@ module.exports = function(grunt) {
       grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
 
       // Write blocks to separate files
-      blocks.forEach(function (block) {
+      blocks.filter(function (block) {
+        if (existingFiles.indexOf(block.dest) !== -1) {
+          return false;
+        } else {
+          return true;
+        }
+      }).map(function (block) {
         var lines = block.lines.map(properIndentation);
         var leadingWhitespace = lines.map(countWhitespace);
         var crop = leadingWhitespace.reduce(getLeadingWhitespace);
@@ -51,6 +58,7 @@ module.exports = function(grunt) {
         lines = trimLines(lines, crop);
 
         grunt.file.write(options.dest + block.dest, lines.join(grunt.util.linefeed));
+        existingFiles.push(block.dest);
       });
 
       grunt.verbose.writeln();
