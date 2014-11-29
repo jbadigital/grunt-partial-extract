@@ -22,9 +22,10 @@ module.exports = function(grunt) {
       patternend: /\<\!--\s*endextract\s*--\>/
     });
 
-    grunt.verbose.writeln('Destination: ' + options.dest);
+    grunt.log.writeln('Destination: ' + options.dest);
     grunt.verbose.writeln('Files: ' + this.files.length);
-    grunt.verbose.writeln();
+    grunt.log.writeln();
+
     var existingFiles = [];
 
     // Iterate over all specified file groups.
@@ -46,6 +47,7 @@ module.exports = function(grunt) {
       // Write blocks to separate files
       blocks.filter(function (block) {
         if (existingFiles.indexOf(block.dest) !== -1) {
+          grunt.verbose.warn("Skip file " + block.dest + " which already exists.");
           return false;
         } else {
           return true;
@@ -63,6 +65,8 @@ module.exports = function(grunt) {
 
       grunt.verbose.writeln();
     });
+
+    grunt.log.oklns('Extracted ' + existingFiles.length + ' unique partials.');
   });
 
   /**
