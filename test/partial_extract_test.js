@@ -22,7 +22,7 @@ var grunt = require('grunt');
     test.ifError(value)
 */
 
-exports.partial-extract = {
+exports.partial_extract = {
   setUp: function(done) {
     // setup here if necessary
     done();
@@ -44,5 +44,5 @@ exports.partial-extract = {
     test.equal(actual, expected, 'should describe what the custom option(s) behavior is.');
 
     test.done();
-  },
+  }
 };
