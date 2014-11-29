@@ -2,22 +2,22 @@
   "name": "grunt-partial-extract",
   "description": "Extract partials from any text based file and write to distinct file.",
   "version": "0.1.0",
-  "homepage": "https://github.com/tilman/partial-extract",
+  "homepage": "https://gitlab.wegewerk.net/wegewerk/grunt-partial-extract",
   "author": {
     "name": "Tilman Justen",
     "email": "tjt@wegewerk.com"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/tilman/partial-extract.git"
+    "url": "https://gitlab.wegewerk.net/wegewerk/grunt-partial-extract.git"
   },
   "bugs": {
-    "url": "https://github.com/tilman/partial-extract/issues"
+    "url": "https://gitlab.wegewerk.net/wegewerk/grunt-partial-extract/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/tilman/partial-extract/blob/master/LICENSE-MIT"
+      "url": "https://gitlab.wegewerk.net/wegewerk/grunt-partial-extract/blob/master/LICENSE-MIT"
     }
   ],
   "engines": {
