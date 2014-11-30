@@ -22,6 +22,10 @@ module.exports = function(grunt) {
         /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*-->/,
         /<\!--\s*endextract\s*-->/
       ],
+      wrap: [
+        '<template id="partial">',
+        '</template>'
+      ]
     });
 
     grunt.log.writeln('Destination: ' + options.dest);
@@ -60,6 +64,11 @@ module.exports = function(grunt) {
         var crop = leadingWhitespace.reduce(getLeadingWhitespace);
 
         lines = trimLines(lines, crop);
+
+        if (options.wrap.length) {
+          lines.unshift(options.wrap[0]);
+          lines.push(options.wrap[1]);
+        }
 
         grunt.file.write(options.dest + block.dest, lines.join(grunt.util.linefeed));
         existingFiles.push(block.dest);
