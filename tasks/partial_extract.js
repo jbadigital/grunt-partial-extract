@@ -18,8 +18,10 @@ module.exports = function(grunt) {
   grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to distinct file.', function() {
     // Merge task-specific and/or target-specific options with these defaults.
     options = this.options({
-      patternbegin: /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*-->/,
-      patternend: /<\!--\s*endextract\s*-->/
+      pattern: [
+        /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*-->/,
+        /<\!--\s*endextract\s*-->/
+      ],
     });
 
     grunt.log.writeln('Destination: ' + options.dest);
@@ -32,7 +34,7 @@ module.exports = function(grunt) {
     this.files.forEach(function(file) {
       var content = grunt.util.normalizelf(grunt.file.read(file.src));
 
-      if (!options.patternbegin.test(content)) {
+      if (!options.pattern[0].test(content)) {
         grunt.log.errorlns('No partials in file ' + file.src);
         grunt.verbose.writeln();
 
@@ -83,7 +85,7 @@ module.exports = function(grunt) {
 
     // Import blocks from file
     lines.forEach(function (line) {
-      if (line.match(options.patternend)) {
+      if (line.match(options.pattern[1])) {
         add = false;
         blocks.push(block);
       }
@@ -92,7 +94,7 @@ module.exports = function(grunt) {
         block.lines.push(line);
       }
 
-      if (match = line.match(options.patternbegin)) {
+      if (match = line.match(options.pattern[0])) {
         add = true;
         block = {dest: match[1], lines: []};
       }
