@@ -22,7 +22,7 @@ module.exports = function(grunt) {
         /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*-->/,
         /<\!--\s*endextract\s*-->/
       ],
-      wrap: [
+      partialWrap: [
         '<template id="partial">',
         '</template>'
       ]
@@ -65,9 +65,9 @@ module.exports = function(grunt) {
 
         lines = trimLines(lines, crop);
 
-        if (options.wrap.length) {
-          lines.unshift(options.wrap[0]);
-          lines.push(options.wrap[1]);
+        if (options.partialWrap.length) {
+          lines.unshift(options.partialWrap[0]);
+          lines.push(options.partialWrap[1]);
         }
 
         grunt.file.write(options.dest + block.dest, lines.join(grunt.util.linefeed));
