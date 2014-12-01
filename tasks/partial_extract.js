@@ -26,7 +26,8 @@ module.exports = function(grunt) {
         '<template id="partial">',
         '</template>'
       ],
-      wrap: []
+      wrap: [],
+      dest: './'
     });
 
     grunt.log.writeln('Destination: ' + options.dest);
