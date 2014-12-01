@@ -19,13 +19,14 @@ module.exports = function(grunt) {
     // Merge task-specific and/or target-specific options with these defaults.
     options = this.options({
       pattern: [
-        /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))\s*-->/,
+        /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
         /<\!--\s*endextract\s*-->/
       ],
       partialWrap: [
         '<template id="partial">',
         '</template>'
-      ]
+      ],
+      wrap: []
     });
 
     grunt.log.writeln('Destination: ' + options.dest);
@@ -62,9 +63,20 @@ module.exports = function(grunt) {
         var lines = block.lines.map(properIndentation);
         var leadingWhitespace = lines.map(countWhitespace);
         var crop = leadingWhitespace.reduce(getLeadingWhitespace);
+        var wrap = block.options.wrap || options.wrap;
 
         lines = trimLines(lines, crop);
 
+        // wrap partial if inline option wrap: exists
+        if (wrap.length) {
+          lines = raiseIndent(lines);
+          lines.unshift('');
+          lines.unshift(block.options.wrap[0] || '');
+          lines.push('');
+          lines.push(block.options.wrap[1] || '');
+        }
+
+        // add partialWrap
         if (options.partialWrap.length) {
           lines.unshift(options.partialWrap[0]);
           lines.push(options.partialWrap[1]);
@@ -105,7 +117,7 @@ module.exports = function(grunt) {
 
       if (match = line.match(options.pattern[0])) {
         add = true;
-        block = {dest: match[1], lines: []};
+        block = {dest: match[1], lines: [], options: getBlockOptions(match[0])};
       }
     });
 
@@ -154,6 +166,68 @@ module.exports = function(grunt) {
   function trimLines(lines, num) {
     return lines.map(function (line) {
       return line.substr(num);
+    });
+  }
+
+  /**
+   * read options from annotation
+   *
+   * e.g.: <!-- extract:teaser/content-teaser--small.html wrap:['<div class="teaser-list teaser-list--small">','</div>'] -->
+   * gets:
+   * {
+   *   extract: 'teaser/content-teaser--small.html',
+   *   wrap: [0: '<div class="teaser-list teaser-list--small">', 1: '</div>']
+   * }
+   *
+   * @param annotation
+   * @returns {{}}
+   */
+  function getBlockOptions(annotation) {
+    var optionValues = annotation.split(/\w+\:/).map(function (item) {
+      return item.replace(/<\!--\s?|\s?-->|^\s+|\s+$/, '');
+    }).filter(function (item) {
+      return item.length || false;
+    });
+    var optionKeys = annotation.match(/(\w+)\:/g).map(function (item) {
+      return item.replace(/[^\w]/, '');
+    });
+
+    var opts = {};
+    var patternMultiple = new RegExp(/\:/);
+
+    optionValues.forEach(function (v, i) {
+      var k = optionKeys[i];
+
+      if (typeof k != 'string') {
+        return;
+      }
+
+      // Treat option value as array if it has a colon
+      // @todo: Allow escaped colons to be ignored
+      // RegEx lookbehind negate does not work :(
+      // Should be /(?<!\\)\:/
+      if (v.match(patternMultiple)) {
+        v = v.split(patternMultiple);
+      }
+
+      opts[k] = v;
+    });
+
+    return opts;
+  }
+
+  /**
+   * raise offset in lines
+   *
+   * @param lines
+   * @param offset
+   * @returns {Array}
+   */
+  function raiseIndent(lines, offset) {
+    offset = offset || '    ';
+
+    return lines.map(function (line) {
+      return offset + line;
     });
   }
 };
