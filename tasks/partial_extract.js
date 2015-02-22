@@ -126,23 +126,78 @@ module.exports = function (grunt) {
   function getPartials(lines) {
     var block;
     var add = false;
+        var matches;
     var match;
     var blocks = [];
+        var dest = '';
+        var matchFilename;
+        var matchPath;
+        var matchCategory;
+        var matchName;
+        var path = '';
+        var filename = '';
+        var category = false;
+        var blockOptions = {};
+        var name = '';
 
     // Import blocks from file
     lines.forEach(function (line) {
+            // add block to list and stop adding lines when close annotation is present in current line
       if (line.match(options.pattern[1])) {
         add = false;
         blocks.push(block);
       }
 
+            // add lines if set in previous step until a close annotation is reached
       if (add) {
         block.lines.push(line);
       }
 
-      if (match = line.match(options.pattern[0])) {
+            // create block if opening annotation is present in current line
+            if (matches = line.match(options.pattern[0])) {
         add = true;
-        block = {dest: match[1], lines: [], options: getBlockOptions(match[0])};
+                match = matches[1];
+                blockOptions = getBlockOptions(matches[0]);
+
+                // get filename from extract option
+                matchFilename = match.match(/\/([^\/^\s]+)$/i);
+                filename = (matchFilename.length > -1) ? matchFilename[1] : match;
+
+                // get path from extract option
+                matchPath = match.match(/^([^\s]+\/)/i);
+                path = (matchPath.length > -1) ? matchPath[1] : '';
+
+                // set first folder as category name if not in item options
+                if (!blockOptions.hasOwnProperty('category')) {
+                    matchCategory = match.match(/^([^\s\/]+)\//i);
+                    category = (matchCategory.length > -1) ? matchCategory[1] : false;
+                    category = typeof category === 'string' ? _.startCase(category) : false;
+                } else {
+                    category = blockOptions.category;
+                }
+
+                // get name from filename if not in options
+                if (!blockOptions.hasOwnProperty('name')) {
+                    matchName = filename.match(/^([^\s]+)\./i);
+                    name = (matchName.length > -1) ? matchName[1] : '';
+                    name = typeof name === 'string' ? _.startCase(name) : '';
+                } else {
+                    name = blockOptions.name;
+                }
+
+                // remove nested path from dest if required
+                dest = options.flatten ? filename : match;
+
+                // prepare block data
+                block = {
+                    name: name,
+                    category: category,
+                    options: blockOptions,
+                    path: path,
+                    filename: filename,
+                    dest: dest,
+                    lines: []
+                };
       }
     });
 
