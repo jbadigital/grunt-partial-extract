@@ -21,6 +21,7 @@ module.exports = function (grunt) {
     grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to distinct file.', function () {
         // Merge task-specific and/or target-specific options with these defaults.
         options = this.options({
+            // find components
             pattern: [
                 /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
                 /<\!--\s*endextract\s*-->/
@@ -30,6 +31,7 @@ module.exports = function (grunt) {
                 before: '<template id="partial" {{options}}>',
                 after:  '</template>'
             },
+            // wrap component
             wrap: [],
             // base directory
             base: './inventory',
@@ -274,7 +276,7 @@ module.exports = function (grunt) {
     var optionValues = annotation.split(/\w+\:/).map(function (item) {
       return item.replace(/<\!--\s?|\s?-->|^\s+|\s+$/, '');
     }).filter(function (item) {
-      return item.length || false;
+            return !!item.length;
     });
     var optionKeys = annotation.match(/(\w+)\:/g).map(function (item) {
       return item.replace(/[^\w]/, '');
@@ -286,7 +288,7 @@ module.exports = function (grunt) {
     optionValues.forEach(function (v, i) {
       var k = optionKeys[i];
 
-      if (typeof k != 'string') {
+            if (typeof k !== 'string') {
         return;
       }
 
