@@ -71,10 +71,7 @@ In this example, custom options are used to do something else with whatever else
 ```js
 grunt.initConfig({
   partial-extract: {
-    options: {
-      separator: ': ',
-      punctuation: ' !!!',
-    },
+    options: {},
     files: {
       'dest/default_options': ['src/testing', 'src/123'],
     },
