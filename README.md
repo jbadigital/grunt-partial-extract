@@ -24,7 +24,7 @@ In your project's Gruntfile, add a section named `partial-extract` to the data o
 
 ```js
 grunt.initConfig({
-  partial-extract: {
+  'partial-extract': {
     options: {
       // Task-specific options go here.
     },
@@ -37,44 +37,50 @@ grunt.initConfig({
 
 ### Options
 
-#### options.separator
-Type: `String`
-Default value: `',  '`
-
-A string value that is used to do something with whatever.
-
-#### options.punctuation
-Type: `String`
-Default value: `'.'`
-
-A string value that is used to do something else with whatever else.
-
-### Usage Examples
-
-#### Default Options
-In this example, the default options are used to do something with whatever. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result would be `Testing, 1 2 3.`
-
 ```js
 grunt.initConfig({
-  partial-extract: {
-    options: {},
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
+  'partial-extract': {
+    options: {
+        // Find partials by pattern:
+        //
+        // <!-- extract:individual-file.html optional1:value optional2:value1:value2 -->
+        //   partial
+        // <!-- endextract -->
+        pattern: [
+            /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
+            /<\!--\s*endextract\s*-->/
+        ],
+        // Wrap partial in template element and add options as data attributes
+        partialWrap: {
+            before: '<template id="partial" {{options}}>',
+            after:  '</template>'
+        },
+        // Wrap component for viewing purposes: e.g. add production context
+        //
+        // <!-- extract:individual-file.html wrap:<div class="context">:</div> -->
+        //   partial
+        // <!-- endextract -->
+        //
+        // results in
+        //
+        // <div class="context">
+        //   partial
+        // </div>
+        wrap: [],
+        // Base directory
+        base: './inventory',
+        // Partial directory where individual partial files will be stored (relative to base)
+        partials: './partials',
+        // Remove path from partial destination, put files to partials directory
+        flatten: false,
+        // Store inventory data as JSON file
+        storage: 'partial-extract.json',
+        // Enable storing partials as individual files
+        storePartials: false,
+        // Set indent value of partial code
+        indent: '    '
     },
-  },
-});
-```
-
-#### Custom Options
-In this example, custom options are used to do something else with whatever else. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result in this case would be `Testing: 1 2 3 !!!`
-
-```js
-grunt.initConfig({
-  partial-extract: {
-    options: {},
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
+    files: [],
   },
 });
 ```

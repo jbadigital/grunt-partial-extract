@@ -2,7 +2,7 @@
  * grunt-partial-extract
  * https://github.com/tilmanjusten/grunt-partial-extract
  *
- * Copyright (c) 2014 Tilman Justen
+ * Copyright (c) 2015 Tilman Justen
  * Licensed under the MIT license.
  */
 
@@ -18,32 +18,46 @@ module.exports = function (grunt) {
     var path = require('path');
     var options = {};
 
-    grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to distinct file.', function () {
+    grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to individual files.', function () {
         // Merge task-specific and/or target-specific options with these defaults.
         options = this.options({
-            // find components
+            // Find partials by pattern:
+            //
+            // <!-- extract:individual-file.html optional1:value optional2:value1:value2 -->
+            //   partial
+            // <!-- endextract -->
             pattern: [
                 /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
                 /<\!--\s*endextract\s*-->/
             ],
-            // wrap partial
+            // Wrap partial in template element and add options as data attributes
             partialWrap: {
                 before: '<template id="partial" {{options}}>',
                 after:  '</template>'
             },
-            // wrap component
+            // Wrap component for viewing purposes: e.g. add production context
+            //
+            // <!-- extract:individual-file.html wrap:<div class="context">:</div> -->
+            //   partial
+            // <!-- endextract -->
+            //
+            // results in
+            //
+            // <div class="context">
+            //   partial
+            // </div>
             wrap: [],
-            // base directory
+            // Base directory
             base: './inventory',
-            // partial directory, relative to base
+            // Partial directory where individual partial files will be stored (relative to base)
             partials: './partials',
-            // Put all files to the directory defined in options.base directly. Prevent creating subdirectories
+            // Remove path from partial destination, put files to partials directory
             flatten: false,
             // Store inventory data as JSON file
             storage: 'partial-extract.json',
-            // Store partials as distict file
-            storePartials: true,
-            // set indent
+            // Enable storing partials as individual files
+            storePartials: false,
+            // Set indent value of partial code
             indent: '    '
         });
 
