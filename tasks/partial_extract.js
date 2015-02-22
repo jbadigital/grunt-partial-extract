@@ -115,16 +115,16 @@ module.exports = function (grunt) {
 
                 lines = trimLines(lines, crop);
 
-                var processedLines = util._extend([], lines);
+                var viewLines = util._extend([], lines);
                 var templateLines = util._extend([], lines);
 
                 // wrap partial if inline option viewWrap: exists
                 if (viewWrap.before.length) {
-                    processedLines = raiseIndent(processedLines);
-                    processedLines.unshift('');
-                    processedLines.unshift(viewWrap.before);
-                    processedLines.push('');
-                    processedLines.push(viewWrap.after);
+                    viewLines = raiseIndent(viewLines);
+                    viewLines.unshift('');
+                    viewLines.unshift(viewWrap.before);
+                    viewLines.push('');
+                    viewLines.push(viewWrap.after);
                 }
 
                 // add templateWrap
@@ -141,7 +141,7 @@ module.exports = function (grunt) {
 
                 block.lines         = lines;
                 block.partial       = lines.join(grunt.util.linefeed);
-                block.processed     = processedLines.join(grunt.util.linefeed);
+                block.view          = viewLines.join(grunt.util.linefeed);
                 block.template      = templateLines.join(grunt.util.linefeed);
                 block.optionsData   = templateWrapOptions;
                 block.origin        = origin;
