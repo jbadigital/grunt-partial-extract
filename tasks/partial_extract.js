@@ -22,10 +22,11 @@ module.exports = function(grunt) {
         /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
         /<\!--\s*endextract\s*-->/
       ],
-      partialWrap: [
-        '<template id="partial">',
-        '</template>'
-      ],
+            // wrap partial
+            partialWrap: {
+                before: '<template id="partial" {{options}}>',
+                after:  '</template>'
+            },
       wrap: [],
       dest: './'
     });
@@ -69,6 +70,8 @@ module.exports = function(grunt) {
 
         lines = trimLines(lines, crop);
 
+                var templateLines = util._extend([], lines);
+
         // wrap partial if inline option wrap: exists
         if (wrap.length) {
           lines = raiseIndent(lines);
@@ -79,12 +82,19 @@ module.exports = function(grunt) {
         }
 
         // add partialWrap
-        if (options.partialWrap.length) {
-          lines.unshift(options.partialWrap[0]);
-          lines.push(options.partialWrap[1]);
+                if (typeof options.partialWrap === 'object') {
+                    var before = options.partialWrap.before || '';
+                    var after = options.partialWrap.after || '';
+
+                    before = before.replace('{{options}}', partialWrapOptions);
+                    after = after.replace('{{options}}', partialWrapOptions);
+
+                    templateLines.unshift(before);
+                    templateLines.push(after);
         }
 
         grunt.file.write(options.dest + block.dest, lines.join(grunt.util.linefeed));
+                block.template      = templateLines.join(grunt.util.linefeed);
                 block.optionsData   = partialWrapOptions;
         existingFiles.push(block.dest);
       });
