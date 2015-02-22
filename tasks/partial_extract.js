@@ -50,6 +50,7 @@ module.exports = function(grunt) {
 
       var lines = content.split(grunt.util.linefeed);
       var blocks = getPartials(lines);
+            var origin = file.src;
 
       grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
 
@@ -96,6 +97,8 @@ module.exports = function(grunt) {
         grunt.file.write(options.dest + block.dest, lines.join(grunt.util.linefeed));
                 block.template      = templateLines.join(grunt.util.linefeed);
                 block.optionsData   = partialWrapOptions;
+                block.origin        = origin;
+
         existingFiles.push(block.dest);
       });
 
