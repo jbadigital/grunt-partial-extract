@@ -60,15 +60,21 @@ module.exports = function (grunt) {
 
       grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
 
-      // Write blocks to separate files
-      blocks.filter(function (block) {
+            function filterByDest(block) {
         if (existingFiles.indexOf(block.dest) !== -1) {
           grunt.verbose.warn("Skip file " + block.dest + " which already exists.");
           return false;
-        } else {
+                }
+
           return true;
         }
-      }).map(function (block) {
+
+            // Write blocks to separate files
+            blocks.filter(filterByDest).map(function (block) {
+                if (!filterByDest(block)) {
+                    return;
+                }
+
         var lines = block.lines.map(properIndentation);
         var leadingWhitespace = lines.map(countWhitespace);
         var crop = leadingWhitespace.reduce(getLeadingWhitespace);
