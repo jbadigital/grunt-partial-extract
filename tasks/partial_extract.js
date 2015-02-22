@@ -110,7 +110,7 @@ module.exports = function (grunt) {
                 var lines = block.lines.map(properIndentation);
                 var leadingWhitespace = lines.map(countWhitespace);
                 var crop = leadingWhitespace.reduce(getLeadingWhitespace);
-                var viewWrap = block.options.wrap || options.viewWrap;
+                var viewWrap = formalizeWrap(block.options.wrap || options.viewWrap);
                 var templateWrapOptions = optionsToDataString(block.options);
 
                 lines = trimLines(lines, crop);
@@ -119,12 +119,12 @@ module.exports = function (grunt) {
                 var templateLines = util._extend([], lines);
 
                 // wrap partial if inline option viewWrap: exists
-                if (viewWrap.length) {
+                if (viewWrap.before.length) {
                     processedLines = raiseIndent(processedLines);
                     processedLines.unshift('');
-                    processedLines.unshift(block.options.viewWrap[0] || '');
+                    processedLines.unshift(viewWrap.before);
                     processedLines.push('');
-                    processedLines.push(block.options.viewWrap[1] || '');
+                    processedLines.push(viewWrap.after);
                 }
 
                 // add templateWrap
@@ -399,5 +399,43 @@ module.exports = function (grunt) {
         }
 
         return prepared.join(' ');
+    }
+
+    /**
+     * Formalize any given value as wrap object
+     *
+     * @param wrap
+     * @returns {{before: string, after: string}}
+     */
+    function formalizeWrap(wrap) {
+        var result = {before: '', after: ''};
+
+        if ((typeof wrap === 'string' && wrap.length > 0) || typeof wrap === 'number') {
+            result.before = result.after = wrap;
+        } else if  (Array.isArray(wrap) && wrap.length > 0) {
+            result.before = [].slice.call(wrap, 0, 1)[0];
+            result.after = wrap.length > 1 ? [].slice.call(wrap, 1, 2)[0] : before;
+        } else if (_.isPlainObject(wrap)) {
+            var i = 0;
+            var el;
+
+            // crappy method getting the value of the first and second item in object
+            for (el in wrap) {
+                if (!wrap.hasOwnProperty(el)) {
+                    return;
+                }
+
+                if (i < 2) {
+                    result.before = wrap[el];
+                }
+
+                i++;
+            }
+
+            // set value of after to the value of before if after is empty
+            result.after = result.after.length < 1 ? result.before : result.after;
+        }
+
+        return result;
     }
 };
