@@ -65,6 +65,7 @@ module.exports = function(grunt) {
         var leadingWhitespace = lines.map(countWhitespace);
         var crop = leadingWhitespace.reduce(getLeadingWhitespace);
         var wrap = block.options.wrap || options.wrap;
+                var partialWrapOptions = optionsToDataString(block.options);
 
         lines = trimLines(lines, crop);
 
@@ -84,6 +85,7 @@ module.exports = function(grunt) {
         }
 
         grunt.file.write(options.dest + block.dest, lines.join(grunt.util.linefeed));
+                block.optionsData   = partialWrapOptions;
         existingFiles.push(block.dest);
       });
 
@@ -231,4 +233,44 @@ module.exports = function(grunt) {
       return offset + line;
     });
   }
+
+    /**
+     * Format options as string of HTML data parameters
+     *
+     * @param options
+     * @returns {string}
+     */
+    function optionsToDataString(options) {
+        if (typeof options !== 'object') {
+            return '';
+        }
+
+        var prepared = [];
+        var el;
+
+        for (el in options) {
+            if (options.hasOwnProperty(el) === false) {
+                continue;
+            }
+
+            var value = options[el];
+            var preparedVal = JSON.stringify(options[el]);
+            var param = '';
+
+            // Ignore callbacks
+            if (typeof value === 'function') {
+                continue;
+            }
+
+            // Cleanup: Remove leading and trailing " and ', replace " by ' (e.g. in stringified objects)
+            preparedVal = preparedVal.replace(/^[\'\"]|[\'\"]$/g, '').replace(/\\?\"/g, '\'');
+
+            // Build data parameter: data-name="value"
+            param = 'data-' + el + '="' + preparedVal + '"';
+
+            prepared.push(param);
+        }
+
+        return prepared.join(' ');
+    }
 };
