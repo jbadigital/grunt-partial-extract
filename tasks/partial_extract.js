@@ -8,30 +8,36 @@
 
 'use strict';
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
-  // Please see the Grunt documentation for more information regarding task
-  // creation: http://gruntjs.com/creating-tasks
+    // Please see the Grunt documentation for more information regarding task
+    // creation: http://gruntjs.com/creating-tasks
 
-  var options = {};
+    var util = require('util');
+    var _ = require('lodash');
+    var path = require('path');
+    var options = {};
 
-  grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to distinct file.', function() {
-    // Merge task-specific and/or target-specific options with these defaults.
-    options = this.options({
-      pattern: [
-        /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
-        /<\!--\s*endextract\s*-->/
-      ],
+    grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to distinct file.', function () {
+        // Merge task-specific and/or target-specific options with these defaults.
+        options = this.options({
+            pattern: [
+                /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
+                /<\!--\s*endextract\s*-->/
+            ],
             // wrap partial
             partialWrap: {
                 before: '<template id="partial" {{options}}>',
                 after:  '</template>'
             },
-      wrap: [],
-      dest: './'
+            wrap: [],
+            // base directory
+            base: './inventory',
+            // Store partials as distict file
+            storePartials: true,
     });
 
-    grunt.log.writeln('Destination: ' + options.dest);
+        grunt.log.writeln('Destination: ' + options.base);
     grunt.verbose.writeln('Files: ' + this.files.length);
     grunt.log.writeln();
 
@@ -94,12 +100,15 @@ module.exports = function(grunt) {
                     templateLines.push(after);
         }
 
-        grunt.file.write(options.dest + block.dest, lines.join(grunt.util.linefeed));
                 block.template      = templateLines.join(grunt.util.linefeed);
                 block.optionsData   = partialWrapOptions;
                 block.origin        = origin;
 
         existingFiles.push(block.dest);
+
+                if (options.storePartials) {
+                    grunt.file.write(path.resolve(options.base, options.partials, block.dest), block.template);
+                }
       });
 
       grunt.verbose.writeln();
