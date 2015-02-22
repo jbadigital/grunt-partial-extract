@@ -66,7 +66,7 @@ grunt.initConfig({
         // <div class="context">
         //   partial
         // </div>
-        wrap: [],
+        viewWrap: [],
         // Base directory
         base: './inventory',
         // Partial directory where individual partial files will be stored (relative to base)

@@ -31,7 +31,7 @@ module.exports = function (grunt) {
                 /<\!--\s*endextract\s*-->/
             ],
             // Wrap partial in template element and add options as data attributes
-            partialWrap: {
+            templateWrap: {
                 before: '<template id="partial" {{options}}>',
                 after:  '</template>'
             },
@@ -46,7 +46,10 @@ module.exports = function (grunt) {
             // <div class="context">
             //   partial
             // </div>
-            wrap: [],
+            viewWrap: {
+                before: '',
+                after: ''
+            },
             // Base directory
             base: './inventory',
             // Partial directory where individual partial files will be stored (relative to base)
@@ -107,30 +110,30 @@ module.exports = function (grunt) {
                 var lines = block.lines.map(properIndentation);
                 var leadingWhitespace = lines.map(countWhitespace);
                 var crop = leadingWhitespace.reduce(getLeadingWhitespace);
-                var wrap = block.options.wrap || options.wrap;
-                var partialWrapOptions = optionsToDataString(block.options);
+                var viewWrap = block.options.wrap || options.viewWrap;
+                var templateWrapOptions = optionsToDataString(block.options);
 
                 lines = trimLines(lines, crop);
 
                 var processedLines = util._extend([], lines);
                 var templateLines = util._extend([], lines);
 
-                // wrap partial if inline option wrap: exists
-                if (wrap.length) {
+                // wrap partial if inline option viewWrap: exists
+                if (viewWrap.length) {
                     processedLines = raiseIndent(processedLines);
                     processedLines.unshift('');
-                    processedLines.unshift(block.options.wrap[0] || '');
+                    processedLines.unshift(block.options.viewWrap[0] || '');
                     processedLines.push('');
-                    processedLines.push(block.options.wrap[1] || '');
+                    processedLines.push(block.options.viewWrap[1] || '');
                 }
 
-                // add partialWrap
-                if (typeof options.partialWrap === 'object') {
-                    var before = options.partialWrap.before || '';
-                    var after = options.partialWrap.after || '';
+                // add templateWrap
+                if (typeof options.templateWrap === 'object') {
+                    var before = options.templateWrap.before || '';
+                    var after = options.templateWrap.after || '';
 
-                    before = before.replace('{{options}}', partialWrapOptions);
-                    after = after.replace('{{options}}', partialWrapOptions);
+                    before = before.replace('{{options}}', templateWrapOptions);
+                    after = after.replace('{{options}}', templateWrapOptions);
 
                     templateLines.unshift(before);
                     templateLines.push(after);
@@ -140,7 +143,7 @@ module.exports = function (grunt) {
                 block.partial       = lines.join(grunt.util.linefeed);
                 block.processed     = processedLines.join(grunt.util.linefeed);
                 block.template      = templateLines.join(grunt.util.linefeed);
-                block.optionsData   = partialWrapOptions;
+                block.optionsData   = templateWrapOptions;
                 block.origin        = origin;
 
                 existingFiles.push(block.dest);
@@ -303,7 +306,7 @@ module.exports = function (grunt) {
      * gets:
      * {
      *   extract: 'teaser/content-teaser--small.html',
-     *   wrap: [0: '<div class="teaser-list teaser-list--small">', 1: '</div>']
+     *   viewWrap: [0: '<div class="teaser-list teaser-list--small">', 1: '</div>']
      * }
      *
      * @param annotation
