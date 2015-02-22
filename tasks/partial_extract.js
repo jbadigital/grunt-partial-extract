@@ -414,7 +414,7 @@ module.exports = function (grunt) {
             result.before = result.after = wrap;
         } else if  (Array.isArray(wrap) && wrap.length > 0) {
             result.before = [].slice.call(wrap, 0, 1)[0];
-            result.after = wrap.length > 1 ? [].slice.call(wrap, 1, 2)[0] : before;
+            result.after = wrap.length > 1 ? [].slice.call(wrap, 1, 2)[0] : result.before;
         } else if (_.isPlainObject(wrap)) {
             var i = 0;
             var el;
