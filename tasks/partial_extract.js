@@ -35,6 +35,8 @@ module.exports = function (grunt) {
             base: './inventory',
             // Store partials as distict file
             storePartials: true,
+            // set indent
+            indent: '    '
     });
 
         grunt.log.writeln('Destination: ' + options.base);
@@ -211,13 +213,13 @@ module.exports = function (grunt) {
   }
 
   /**
-   * replace tabs by four spaces
+     * replace tabs by indent value
    *
    * @param line
    * @return string
    */
   function properIndentation(line) {
-    return line.replace(/\t/, '    ');
+        return line.replace(/\t/, options.indent || '');
   }
 
   /**
