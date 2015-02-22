@@ -35,43 +35,54 @@ module.exports = function (grunt) {
             wrap: [],
             // base directory
             base: './inventory',
+            // partial directory, relative to base
+            partials: './partials',
+            // Put all files to the directory defined in options.base directly. Prevent creating subdirectories
+            flatten: false,
+            // Store inventory data as JSON file
+            storage: 'partial-extract.json',
             // Store partials as distict file
             storePartials: true,
             // set indent
             indent: '    '
-    });
+        });
 
         grunt.log.writeln('Destination: ' + options.base);
-    grunt.verbose.writeln('Files: ' + this.files.length);
-    grunt.log.writeln();
+        grunt.verbose.writeln('Files: ' + this.files.length);
+        grunt.log.writeln();
 
-    var existingFiles = [];
+        var existingFiles = [];
+        var processedBlocks = {
+            options: options,
+            length: 0,
+            items: []
+        };
 
-    // Iterate over all specified file groups.
-    this.files.forEach(function(file) {
-      var content = grunt.util.normalizelf(grunt.file.read(file.src));
+        // Iterate over all specified file groups.
+        this.files.forEach(function (file) {
+            var content = grunt.util.normalizelf(grunt.file.read(file.src));
 
-      if (!options.pattern[0].test(content)) {
-        grunt.log.errorlns('No partials in file ' + file.src);
-        grunt.verbose.writeln();
+            if (!options.pattern[0].test(content)) {
+                grunt.log.errorlns('No partials in file ' + file.src);
+                grunt.verbose.writeln();
 
-        return;
-      }
+                return;
+            }
 
-      var lines = content.split(grunt.util.linefeed);
-      var blocks = getPartials(lines);
+            var lines = content.split(grunt.util.linefeed);
+            var blocks = getPartials(lines);
             var origin = file.src;
 
-      grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
+            grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
 
             function filterByDest(block) {
-        if (existingFiles.indexOf(block.dest) !== -1) {
-          grunt.verbose.warn("Skip file " + block.dest + " which already exists.");
-          return false;
+                if (existingFiles.indexOf(block.dest) !== -1) {
+                    grunt.verbose.warn("Skip file " + block.dest + " which already exists.");
+                    return false;
                 }
 
-          return true;
-        }
+                return true;
+            }
 
             // Write blocks to separate files
             blocks.filter(filterByDest).map(function (block) {
@@ -79,26 +90,27 @@ module.exports = function (grunt) {
                     return;
                 }
 
-        var lines = block.lines.map(properIndentation);
-        var leadingWhitespace = lines.map(countWhitespace);
-        var crop = leadingWhitespace.reduce(getLeadingWhitespace);
-        var wrap = block.options.wrap || options.wrap;
+                var lines = block.lines.map(properIndentation);
+                var leadingWhitespace = lines.map(countWhitespace);
+                var crop = leadingWhitespace.reduce(getLeadingWhitespace);
+                var wrap = block.options.wrap || options.wrap;
                 var partialWrapOptions = optionsToDataString(block.options);
 
-        lines = trimLines(lines, crop);
+                lines = trimLines(lines, crop);
 
+                var processedLines = util._extend([], lines);
                 var templateLines = util._extend([], lines);
 
-        // wrap partial if inline option wrap: exists
-        if (wrap.length) {
-          lines = raiseIndent(lines);
-          lines.unshift('');
-          lines.unshift(block.options.wrap[0] || '');
-          lines.push('');
-          lines.push(block.options.wrap[1] || '');
-        }
+                // wrap partial if inline option wrap: exists
+                if (wrap.length) {
+                    processedLines = raiseIndent(processedLines);
+                    processedLines.unshift('');
+                    processedLines.unshift(block.options.wrap[0] || '');
+                    processedLines.push('');
+                    processedLines.push(block.options.wrap[1] || '');
+                }
 
-        // add partialWrap
+                // add partialWrap
                 if (typeof options.partialWrap === 'object') {
                     var before = options.partialWrap.before || '';
                     var after = options.partialWrap.after || '';
@@ -108,37 +120,48 @@ module.exports = function (grunt) {
 
                     templateLines.unshift(before);
                     templateLines.push(after);
-        }
+                }
 
+                block.lines         = lines;
+                block.partial       = lines.join(grunt.util.linefeed);
+                block.processed     = processedLines.join(grunt.util.linefeed);
                 block.template      = templateLines.join(grunt.util.linefeed);
                 block.optionsData   = partialWrapOptions;
                 block.origin        = origin;
 
-        existingFiles.push(block.dest);
+                existingFiles.push(block.dest);
+
+                processedBlocks.items.push(block);
 
                 if (options.storePartials) {
                     grunt.file.write(path.resolve(options.base, options.partials, block.dest), block.template);
                 }
-      });
+            });
 
-      grunt.verbose.writeln();
+            grunt.verbose.writeln();
+        });
+
+        processedBlocks.length = processedBlocks.items.length;
+
+        grunt.file.write(path.resolve(options.base, options.storage), JSON.stringify(processedBlocks, null, '\t'));
+
+        grunt.log.writeln();
+
+        grunt.log.oklns('Extracted ' + existingFiles.length + ' unique partials.');
     });
 
-    grunt.log.oklns('Extracted ' + existingFiles.length + ' unique partials.');
-  });
-
-  /**
-   * extract partials
-   *
-   * @param lines
-   * @returns {Array}
-   */
-  function getPartials(lines) {
-    var block;
-    var add = false;
+    /**
+     * extract partials
+     *
+     * @param lines
+     * @returns {Array}
+     */
+    function getPartials(lines) {
+        var block;
+        var add = false;
         var matches;
-    var match;
-    var blocks = [];
+        var match;
+        var blocks = [];
         var dest = '';
         var matchFilename;
         var matchPath;
@@ -150,22 +173,22 @@ module.exports = function (grunt) {
         var blockOptions = {};
         var name = '';
 
-    // Import blocks from file
-    lines.forEach(function (line) {
+        // Import blocks from file
+        lines.forEach(function (line) {
             // add block to list and stop adding lines when close annotation is present in current line
-      if (line.match(options.pattern[1])) {
-        add = false;
-        blocks.push(block);
-      }
+            if (line.match(options.pattern[1])) {
+                add = false;
+                blocks.push(block);
+            }
 
             // add lines if set in previous step until a close annotation is reached
-      if (add) {
-        block.lines.push(line);
-      }
+            if (add) {
+                block.lines.push(line);
+            }
 
             // create block if opening annotation is present in current line
             if (matches = line.match(options.pattern[0])) {
-        add = true;
+                add = true;
                 match = matches[1];
                 blockOptions = getBlockOptions(matches[0]);
 
@@ -208,118 +231,118 @@ module.exports = function (grunt) {
                     dest: dest,
                     lines: []
                 };
-      }
-    });
+            }
+        });
 
-    return blocks;
-  }
+        return blocks;
+    }
 
-  /**
+    /**
      * replace tabs by indent value
-   *
-   * @param line
-   * @return string
-   */
-  function properIndentation(line) {
+     *
+     * @param line
+     * @return string
+     */
+    function properIndentation(line) {
         return line.replace(/\t/, options.indent || '');
-  }
+    }
 
-  /**
-   * count leading whitespace chars
-   *
-   * @param line
-   * @return integer
-   */
-  function countWhitespace(line) {
-    // return a somewhat high value for empty lines
-    return line.length ? line.match(/^\s*/)[0].length : 9999;
-  }
+    /**
+     * count leading whitespace chars
+     *
+     * @param line
+     * @return integer
+     */
+    function countWhitespace(line) {
+        // return a somewhat high value for empty lines
+        return line.length ? line.match(/^\s*/)[0].length : 9999;
+    }
 
-  /**
-   * get lowest value of leading whitespace in a given block
-   *
-   * @param previous
-   * @param current
-   * @returns integer
-   */
-  function getLeadingWhitespace(previous, current) {
-    return previous <= current ? previous : current;
-  }
+    /**
+     * get lowest value of leading whitespace in a given block
+     *
+     * @param previous
+     * @param current
+     * @returns integer
+     */
+    function getLeadingWhitespace(previous, current) {
+        return previous <= current ? previous : current;
+    }
 
-  /**
-   * trim given number of leading characters
-   *
-   * @param lines
-   * @param num Number of chars to be removed
-   * @returns Array
-   */
-  function trimLines(lines, num) {
-    return lines.map(function (line) {
-      return line.substr(num);
-    });
-  }
+    /**
+     * trim given number of leading characters
+     *
+     * @param lines
+     * @param num Number of chars to be removed
+     * @returns Array
+     */
+    function trimLines(lines, num) {
+        return lines.map(function (line) {
+            return line.substr(num);
+        });
+    }
 
-  /**
-   * read options from annotation
-   *
-   * e.g.: <!-- extract:teaser/content-teaser--small.html wrap:['<div class="teaser-list teaser-list--small">','</div>'] -->
-   * gets:
-   * {
-   *   extract: 'teaser/content-teaser--small.html',
-   *   wrap: [0: '<div class="teaser-list teaser-list--small">', 1: '</div>']
-   * }
-   *
-   * @param annotation
-   * @returns {{}}
-   */
-  function getBlockOptions(annotation) {
-    var optionValues = annotation.split(/\w+\:/).map(function (item) {
-      return item.replace(/<\!--\s?|\s?-->|^\s+|\s+$/, '');
-    }).filter(function (item) {
+    /**
+     * read options from annotation
+     *
+     * e.g.: <!-- extract:teaser/content-teaser--small.html wrap:['<div class="teaser-list teaser-list--small">','</div>'] -->
+     * gets:
+     * {
+     *   extract: 'teaser/content-teaser--small.html',
+     *   wrap: [0: '<div class="teaser-list teaser-list--small">', 1: '</div>']
+     * }
+     *
+     * @param annotation
+     * @returns {{}}
+     */
+    function getBlockOptions(annotation) {
+        var optionValues = annotation.split(/\w+\:/).map(function (item) {
+            return item.replace(/<\!--\s?|\s?-->|^\s+|\s+$/, '');
+        }).filter(function (item) {
             return !!item.length;
-    });
-    var optionKeys = annotation.match(/(\w+)\:/g).map(function (item) {
-      return item.replace(/[^\w]/, '');
-    });
+        });
+        var optionKeys = annotation.match(/(\w+)\:/g).map(function (item) {
+            return item.replace(/[^\w]/, '');
+        });
 
-    var opts = {};
-    var patternMultiple = new RegExp(/\:/);
+        var opts = {};
+        var patternMultiple = new RegExp(/\:/);
 
-    optionValues.forEach(function (v, i) {
-      var k = optionKeys[i];
+        optionValues.forEach(function (v, i) {
+            var k = optionKeys[i];
 
             if (typeof k !== 'string') {
-        return;
-      }
+                return;
+            }
 
-      // Treat option value as array if it has a colon
-      // @todo: Allow escaped colons to be ignored
-      // RegEx lookbehind negate does not work :(
-      // Should be /(?<!\\)\:/
-      if (v.match(patternMultiple)) {
-        v = v.split(patternMultiple);
-      }
+            // Treat option value as array if it has a colon
+            // @todo: Allow escaped colons to be ignored
+            // RegEx lookbehind negate does not work :(
+            // Should be /(?<!\\)\:/
+            if (v.match(patternMultiple)) {
+                v = v.split(patternMultiple);
+            }
 
-      opts[k] = v;
-    });
+            opts[k] = v;
+        });
 
-    return opts;
-  }
+        return opts;
+    }
 
-  /**
-   * raise offset in lines
-   *
-   * @param lines
-   * @param offset
-   * @returns {Array}
-   */
-  function raiseIndent(lines, offset) {
-    offset = offset || '    ';
+    /**
+     * raise offset in lines
+     *
+     * @param lines
+     * @param offset
+     * @returns {Array}
+     */
+    function raiseIndent(lines, offset) {
+        offset = offset || '    ';
 
-    return lines.map(function (line) {
-      return offset + line;
-    });
-  }
+        return lines.map(function (line) {
+            return offset + line;
+        });
+    }
 
     /**
      * Format options as string of HTML data parameters
