@@ -211,16 +211,16 @@ module.exports = function (grunt) {
 
                 // get filename from extract option
                 matchFilename = match.match(/\/([^\/^\s]+)$/i);
-                filename = (matchFilename.length > -1) ? matchFilename[1] : match;
+                filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : match;
 
                 // get path from extract option
                 matchPath = match.match(/^([^\s]+\/)/i);
-                path = (matchPath.length > -1) ? matchPath[1] : '';
+                path = (matchPath && matchPath.length > -1) ? matchPath[1] : '';
 
                 // set first folder as category name if not in item options
                 if (!blockOptions.hasOwnProperty('category')) {
                     matchCategory = match.match(/^([^\s\/]+)\//i);
-                    category = (matchCategory.length > -1) ? matchCategory[1] : false;
+                    category = (matchCategory && matchCategory.length > -1) ? matchCategory[1] : false;
                     category = typeof category === 'string' ? _.startCase(category) : false;
                 } else {
                     category = _.startCase(blockOptions.category);
@@ -229,7 +229,7 @@ module.exports = function (grunt) {
                 // get name from filename if not in options
                 if (!blockOptions.hasOwnProperty('name')) {
                     matchName = filename.match(/^([^\s]+)\./i);
-                    name = (matchName.length > -1) ? matchName[1] : '';
+                    name = (matchName && matchName.length > -1) ? matchName[1] : '';
                     name = typeof name === 'string' ? _.startCase(name) : '';
                 } else {
                     name = blockOptions.name;
