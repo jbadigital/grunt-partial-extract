@@ -27,7 +27,7 @@ module.exports = function (grunt) {
             //   partial
             // <!-- endextract -->
             pattern: [
-                /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
+                /<\!--\s*extract:\s*(([\w\/-_]+\/)?([\w_\.-]+))(.*)-->/,
                 /<\!--\s*endextract\s*-->/
             ],
             // Wrap partial in template element and add options as data attributes
