@@ -24,12 +24,14 @@ module.exports = function(grunt) {
 
     // Configuration to be run (and then tested).
     'partial-extract': {
-      default_options: {
+      test: {
         options: {
 
         },
         files: [{
-
+          expand: true,
+          cwd: './',
+          src: '*.html'
         }]
       }
     }
@@ -44,7 +46,7 @@ module.exports = function(grunt) {
 
   // Whenever the "test" task is run, first clean the "tmp" dir, then run this
   // plugin's task(s), then test the result.
-  grunt.registerTask('test', ['jshint', 'partial-extract']);
+  grunt.registerTask('test', ['jshint', 'partial-extract:test']);
 
   // By default, lint and run all tests.
   grunt.registerTask('default', ['jshint']);
