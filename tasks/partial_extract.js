@@ -223,7 +223,7 @@ module.exports = function (grunt) {
                     category = (matchCategory.length > -1) ? matchCategory[1] : false;
                     category = typeof category === 'string' ? _.startCase(category) : false;
                 } else {
-                    category = blockOptions.category;
+                    category = _.startCase(blockOptions.category);
                 }
 
                 // get name from filename if not in options
