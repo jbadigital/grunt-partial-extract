@@ -26,11 +26,11 @@ module.exports = function(grunt) {
     'partial-extract': {
       test: {
         options: {
-
+            storePartials: true
         },
         files: [{
           expand: true,
-          cwd: './',
+          cwd: './test',
           src: '*.html'
         }]
       }
