@@ -377,14 +377,24 @@ module.exports = function (grunt) {
 
         var prepared = [];
         var el;
+        var processedOptions = _.assign({}, options);
 
-        for (el in options) {
-            if (options.hasOwnProperty(el) === false) {
+        // prepare wrap option
+        if (processedOptions.hasOwnProperty('wrap')) {
+            processedOptions['wrap-before'] = processedOptions.wrap.before;
+            processedOptions['wrap-after'] = processedOptions.wrap.after;
+
+            delete(processedOptions.wrap);
+        }
+
+        // create data attributes
+        for (el in processedOptions) {
+            if (processedOptions.hasOwnProperty(el) === false) {
                 continue;
             }
 
-            var value = options[el];
-            var preparedVal = JSON.stringify(options[el]);
+            var value = processedOptions[el];
+            var preparedVal = JSON.stringify(processedOptions[el]);
             var param = '';
 
             // Ignore callbacks
