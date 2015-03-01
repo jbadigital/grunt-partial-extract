@@ -1,8 +1,8 @@
 /*
  * grunt-partial-extract
- * https://github.com/tilman/partial-extract
+ * https://github.com/tilmanjusten/grunt-partial-extract
  *
- * Copyright (c) 2014 Tilman Justen
+ * Copyright (c) 2015 Tilman Justen
  * Licensed under the MIT license.
  */
 
