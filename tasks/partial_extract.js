@@ -302,11 +302,11 @@ module.exports = function (grunt) {
     /**
      * read options from annotation
      *
-     * e.g.: <!-- extract:teaser/content-teaser--small.html wrap:['<div class="teaser-list teaser-list--small">','</div>'] -->
+     * e.g.: <!-- extract:teaser/content-teaser--small.html wrap:<div class="teaser-list teaser-list--small">:</div> -->
      * gets:
      * {
      *   extract: 'teaser/content-teaser--small.html',
-     *   viewWrap: [0: '<div class="teaser-list teaser-list--small">', 1: '</div>']
+     *   viewWrap: {before: '<div class="teaser-list teaser-list--small">', after: '</div>'}
      * }
      *
      * @param annotation
