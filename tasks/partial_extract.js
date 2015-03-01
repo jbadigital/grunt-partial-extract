@@ -110,7 +110,7 @@ module.exports = function (grunt) {
                 var lines = block.lines.map(properIndentation);
                 var leadingWhitespace = lines.map(countWhitespace);
                 var crop = leadingWhitespace.reduce(getLeadingWhitespace);
-                var viewWrap = formalizeWrap(block.options.wrap || options.viewWrap);
+                var viewWrap = block.options.wrap;
                 var templateWrapOptions = optionsToDataString(block.options);
 
                 lines = trimLines(lines, crop);
@@ -342,6 +342,9 @@ module.exports = function (grunt) {
 
             opts[k] = v;
         });
+
+        // Process options
+        opts.wrap = formalizeWrap(opts.wrap || options.viewWrap);
 
         return opts;
     }
