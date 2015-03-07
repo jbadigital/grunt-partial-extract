@@ -211,7 +211,7 @@ module.exports = function (grunt) {
 
                 // get filename from extract option
                 matchFilename = annotationBegin.match(/\/([^\/^\s]+)$/i);
-                filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : match;
+                filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : annotationBegin;
 
                 // get path from extract option
                 matchPath = annotationBegin.match(/^([^\s]+\/)/i);
