@@ -26,10 +26,9 @@ module.exports = function (grunt) {
             // <!-- extract:individual-file.html optional1:value optional2:value1:value2 -->
             //   partial
             // <!-- endextract -->
-            pattern: [
-                /<\!--\s*extract:\s*(([\w\/-_]+\/)?([\w_\.-]+))(.*)-->/,
-                /<\!--\s*endextract\s*-->/
-            ],
+            patternExtract: new RegExp(/<\!--\s*extract:(.|\n)*?endextract\s?-->/g),
+            // Get partial options and content
+            patternPartial: new RegExp(/<!--\s*((?:.|\n)*?)-->((?:.|\n)*?)<!--\s*endextract\s*-->/i),
             // Wrap partial in template element and add options as data attributes
             templateWrap: {
                 before: '<template id="partial" {{options}}>',
@@ -79,15 +78,16 @@ module.exports = function (grunt) {
         this.files.forEach(function (file) {
             var content = grunt.util.normalizelf(grunt.file.read(file.src));
 
-            if (!options.pattern[0].test(content)) {
+            if (!options.patternExtract.test(content)) {
                 grunt.log.errorlns('No partials in file ' + file.src);
                 grunt.verbose.writeln();
 
                 return;
             }
 
-            var lines = content.split(grunt.util.linefeed);
-            var blocks = getPartials(lines);
+            var blocks = getPartials(content);
+            //var lines = content.split(grunt.util.linefeed);
+            //var blocks = getPartials(lines);
             var origin = file.src;
 
             grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
@@ -170,88 +170,70 @@ module.exports = function (grunt) {
     /**
      * extract partials
      *
-     * @param lines
+     * @param src
      * @returns {Array}
      */
-    function getPartials(lines) {
-        var block;
-        var addCurrentLine = false;
-        var matches;
-        var annotationBegin;
-        var blocks = [];
-        var dest = '';
-        var matchFilename;
-        var matchPath;
-        var matchCategory;
-        var matchName;
-        var path = '';
-        var filename = '';
-        var category = false;
-        var blockOptions = {};
-        var name = '';
+    function getPartials(src) {
+        var blocks = src.match(options.patternExtract);
+        var partials = [];
 
-        // Import blocks from file
-        lines.forEach(function (line) {
-            // add block to list and stop adding lines when close annotation is present in current line
-            if (line.match(options.pattern[1]) && addCurrentLine) {
-                addCurrentLine = false;
-                blocks.push(block);
+        blocks.forEach(function (block) {
+            var parts = block.match(options.patternPartial);
+            var blockOptions = getBlockOptions(parts[1]);
+            var content = _.trim(parts[2]);
+            var category = '';
+            var name = '';
+
+            // continue if path is empty
+            if (!blockOptions.hasOwnProperty('extract')) {
+                return;
             }
 
-            // add lines if set in previous step until a close annotation is reached
-            if (addCurrentLine) {
-                block.lines.push(line);
+            // get filename from extract option
+            var matchFilename = blockOptions.extract.match(/\/([^\/^\s]+)$/i);
+            var filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : blockOptions.extract;
+
+            // get path from extract option
+            var matchPath = blockOptions.extract.match(/^([^\s]+\/)/i);
+            var path = (matchPath && matchPath.length > -1) ? matchPath[1] : '';
+
+            // set first folder as category name if not in item options
+            if (!blockOptions.hasOwnProperty('category')) {
+                var matchCategory = blockOptions.extract.match(/^([^\s\/]+)\//i);
+                category = (matchCategory && matchCategory.length > -1) ? matchCategory[1] : false;
+                category = typeof category === 'string' ? _.startCase(category) : false;
+            } else {
+                category = _.startCase(blockOptions.category);
             }
 
-            // create block if opening annotation is present in current line
-            if (matches = line.match(options.pattern[0])) {
-                addCurrentLine = true;
-                annotationBegin = matches[1];
-                blockOptions = getBlockOptions(matches[0]);
-
-                // get filename from extract option
-                matchFilename = annotationBegin.match(/\/([^\/^\s]+)$/i);
-                filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : annotationBegin;
-
-                // get path from extract option
-                matchPath = annotationBegin.match(/^([^\s]+\/)/i);
-                path = (matchPath && matchPath.length > -1) ? matchPath[1] : '';
-
-                // set first folder as category name if not in item options
-                if (!blockOptions.hasOwnProperty('category')) {
-                    matchCategory = annotationBegin.match(/^([^\s\/]+)\//i);
-                    category = (matchCategory && matchCategory.length > -1) ? matchCategory[1] : false;
-                    category = typeof category === 'string' ? _.startCase(category) : false;
-                } else {
-                    category = _.startCase(blockOptions.category);
-                }
-
-                // get name from filename if not in options
-                if (!blockOptions.hasOwnProperty('name')) {
-                    matchName = filename.match(/^([^\s]+)\./i);
-                    name = (matchName && matchName.length > -1) ? matchName[1] : '';
-                    name = typeof name === 'string' ? _.startCase(name) : '';
-                } else {
-                    name = blockOptions.name;
-                }
-
-                // remove nested path from dest if required
-                dest = options.flatten ? filename : annotationBegin;
-
-                // prepare block data
-                block = {
-                    name: name,
-                    category: category,
-                    options: blockOptions,
-                    path: path,
-                    filename: filename,
-                    dest: dest,
-                    lines: []
-                };
+            // get name from filename if not in options
+            if (!blockOptions.hasOwnProperty('name')) {
+                var matchName = filename.match(/^([^\s]+)\./i);
+                name = (matchName && matchName.length > -1) ? matchName[1] : '';
+                name = typeof name === 'string' ? _.startCase(name) : '';
+            } else {
+                name = blockOptions.name;
             }
+
+            // remove nested path from dest if required
+            var dest = options.flatten ? filename : blockOptions.extract;
+
+            // prepare block data
+            var partial = {
+                name: name,
+                category: category,
+                options: blockOptions,
+                path: path,
+                filename: filename,
+                dest: dest,
+                lines: content.split(grunt.util.linefeed),
+                raw: content
+            };
+
+            partials.push(partial)
         });
 
-        return blocks;
+        return partials;
     }
 
     /**
