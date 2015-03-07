@@ -86,72 +86,25 @@ module.exports = function (grunt) {
             }
 
             var blocks = getPartials(content);
-            //var lines = content.split(grunt.util.linefeed);
-            //var blocks = getPartials(lines);
-            var origin = file.src;
 
             grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
 
-            function filterByDest(block) {
-                if (existingFiles.indexOf(block.dest) !== -1) {
-                    grunt.verbose.warn("Skip file " + block.dest + " which already exists.");
-                    return false;
-                }
-
-                return true;
-            }
-
             // Write blocks to separate files
-            blocks.filter(filterByDest).map(function (block) {
-                if (!filterByDest(block)) {
+            blocks.map(function (block) {
+                var processed = processPartial(block, file.src);
+
+                if (existingFiles.indexOf(processed.dest) !== -1) {
+                    grunt.verbose.warn("Skip file " + processed.dest + " which already exists.");
+
                     return;
                 }
 
-                var lines = block.lines.map(properIndentation);
-                var leadingWhitespace = lines.map(countWhitespace);
-                var crop = leadingWhitespace.reduce(getLeadingWhitespace);
-                var viewWrap = block.options.wrap;
-                var templateWrapOptions = optionsToDataString(block.options);
+                existingFiles.push(processed.dest);
 
-                lines = trimLines(lines, crop);
-
-                var viewLines = util._extend([], lines);
-                var templateLines = util._extend([], lines);
-
-                // wrap partial if inline option viewWrap: exists
-                if (viewWrap.before.length) {
-                    viewLines = raiseIndent(viewLines);
-                    viewLines.unshift('');
-                    viewLines.unshift(viewWrap.before);
-                    viewLines.push('');
-                    viewLines.push(viewWrap.after);
-                }
-
-                // add templateWrap
-                if (typeof options.templateWrap === 'object') {
-                    var before = options.templateWrap.before || '';
-                    var after = options.templateWrap.after || '';
-
-                    before = before.replace('{{options}}', templateWrapOptions);
-                    after = after.replace('{{options}}', templateWrapOptions);
-
-                    templateLines.unshift(before);
-                    templateLines.push(after);
-                }
-
-                block.lines         = lines;
-                block.partial       = lines.join(grunt.util.linefeed);
-                block.view          = viewLines.join(grunt.util.linefeed);
-                block.template      = templateLines.join(grunt.util.linefeed);
-                block.optionsData   = templateWrapOptions;
-                block.origin        = origin;
-
-                existingFiles.push(block.dest);
-
-                processedBlocks.items.push(block);
+                processedBlocks.items.push(processed);
 
                 if (options.storePartials) {
-                    grunt.file.write(path.resolve(options.base, options.partials, block.dest), block.template);
+                    grunt.file.write(path.resolve(options.base, options.partials, processed.dest), processed.template);
                 }
             });
 
@@ -179,61 +132,106 @@ module.exports = function (grunt) {
 
         blocks.forEach(function (block) {
             var parts = block.match(options.patternPartial);
-            var blockOptions = getBlockOptions(parts[1]);
-            var content = _.trim(parts[2]);
-            var category = '';
-            var name = '';
-
-            // continue if path is empty
-            if (!blockOptions.hasOwnProperty('extract')) {
-                return;
-            }
-
-            // get filename from extract option
-            var matchFilename = blockOptions.extract.match(/\/([^\/^\s]+)$/i);
-            var filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : blockOptions.extract;
-
-            // get path from extract option
-            var matchPath = blockOptions.extract.match(/^([^\s]+\/)/i);
-            var path = (matchPath && matchPath.length > -1) ? matchPath[1] : '';
-
-            // set first folder as category name if not in item options
-            if (!blockOptions.hasOwnProperty('category')) {
-                var matchCategory = blockOptions.extract.match(/^([^\s\/]+)\//i);
-                category = (matchCategory && matchCategory.length > -1) ? matchCategory[1] : false;
-                category = typeof category === 'string' ? _.startCase(category) : false;
-            } else {
-                category = _.startCase(blockOptions.category);
-            }
-
-            // get name from filename if not in options
-            if (!blockOptions.hasOwnProperty('name')) {
-                var matchName = filename.match(/^([^\s]+)\./i);
-                name = (matchName && matchName.length > -1) ? matchName[1] : '';
-                name = typeof name === 'string' ? _.startCase(name) : '';
-            } else {
-                name = blockOptions.name;
-            }
-
-            // remove nested path from dest if required
-            var dest = options.flatten ? filename : blockOptions.extract;
 
             // prepare block data
-            var partial = {
-                name: name,
-                category: category,
-                options: blockOptions,
-                path: path,
-                filename: filename,
-                dest: dest,
-                lines: content.split(grunt.util.linefeed),
-                raw: content
-            };
-
-            partials.push(partial)
+            partials.push({
+                options: getBlockOptions(parts[1]),
+                content: _.trim(parts[2])
+            });
         });
 
         return partials;
+    }
+
+    /**
+     * process partial
+     *
+     * @param block
+     * @returns {*}
+     */
+    function processPartial(block, origin) {
+        var category = '';
+        var name = '';
+
+        // continue if path is empty
+        if (!block.options.hasOwnProperty('extract')) {
+            return;
+        }
+
+        // get filename from extract option
+        var matchFilename = block.options.extract.match(/\/([^\/^\s]+)$/i);
+        var filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : block.options.extract;
+
+        // get path from extract option
+        var matchPath = block.options.extract.match(/^([^\s]+\/)/i);
+        var path = (matchPath && matchPath.length > -1) ? matchPath[1] : '';
+
+        // set first folder as category name if not in item options
+        if (!block.options.hasOwnProperty('category')) {
+            var matchCategory = block.options.extract.match(/^([^\s\/]+)\//i);
+            category = (matchCategory && matchCategory.length > -1) ? matchCategory[1] : false;
+            category = typeof category === 'string' ? _.startCase(category) : false;
+        } else {
+            category = _.startCase(block.options.category);
+        }
+
+        // get name from filename if not in options
+        if (!block.options.hasOwnProperty('name')) {
+            var matchName = filename.match(/^([^\s]+)\./i);
+            name = (matchName && matchName.length > -1) ? matchName[1] : '';
+            name = typeof name === 'string' ? _.startCase(name) : '';
+        } else {
+            name = block.options.name;
+        }
+
+        // remove nested path from dest if required
+        var dest = options.flatten ? filename : block.options.extract;
+        var lines = block.content.split(grunt.util.linefeed).map(properIndentation);
+        var leadingWhitespace = lines.map(countWhitespace);
+        var crop = leadingWhitespace.reduce(getLeadingWhitespace);
+        var viewWrap = block.options.wrap;
+        var templateWrapOptions = optionsToDataString(block.options);
+
+        lines = trimLines(lines, crop);
+
+        var viewLines = util._extend([], lines);
+        var templateLines = util._extend([], lines);
+
+        // wrap partial if inline option viewWrap: exists
+        if (viewWrap.before.length) {
+            viewLines = raiseIndent(viewLines);
+            viewLines.unshift('');
+            viewLines.unshift(viewWrap.before);
+            viewLines.push('');
+            viewLines.push(viewWrap.after);
+        }
+
+        // add templateWrap
+        if (typeof options.templateWrap === 'object') {
+            var before = options.templateWrap.before || '';
+            var after = options.templateWrap.after || '';
+
+            before = before.replace('{{options}}', templateWrapOptions);
+            after = after.replace('{{options}}', templateWrapOptions);
+
+            templateLines.unshift(before);
+            templateLines.push(after);
+        }
+
+        return {
+            category: category,
+            dest: dest,
+            filename: filename,
+            lines: lines,
+            name: name,
+            options: block.options,
+            optionsData: templateWrapOptions,
+            origin: origin,
+            partial: lines.join(grunt.util.linefeed),
+            path: path,
+            template: templateLines.join(grunt.util.linefeed),
+            view: viewLines.join(grunt.util.linefeed)
+        };
     }
 
     /**
