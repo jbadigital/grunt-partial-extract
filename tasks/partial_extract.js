@@ -26,7 +26,7 @@ module.exports = function (grunt) {
             // <!-- extract:individual-file.html optional1:value optional2:value1:value2 -->
             //   partial
             // <!-- endextract -->
-            patternExtract: new RegExp(/<\!--\s*extract:(.|\n)*?endextract\s?-->/g),
+            patternExtract: new RegExp(/<!--\s*extract:(.|\n)*?endextract\s?-->/g),
             // Get partial options and content
             patternPartial: new RegExp(/<!--\s*((?:.|\n)*?)-->((?:.|\n)*?)<!--\s*endextract\s*-->/i),
             // Wrap partial in template element and add options as data attributes
@@ -65,7 +65,7 @@ module.exports = function (grunt) {
 
         grunt.log.writeln('Destination: ' + options.base);
         grunt.verbose.writeln('Files: ' + this.files.length);
-        grunt.log.writeln();
+        grunt.log.writeln('');
 
         var existingFiles = [];
         var processedBlocks = {
@@ -80,7 +80,7 @@ module.exports = function (grunt) {
 
             if (!options.patternExtract.test(content)) {
                 grunt.log.errorlns('No partials in file ' + file.src);
-                grunt.verbose.writeln();
+                grunt.verbose.writeln('');
 
                 return;
             }
@@ -108,14 +108,14 @@ module.exports = function (grunt) {
                 }
             });
 
-            grunt.verbose.writeln();
+            grunt.verbose.writeln('');
         });
 
         processedBlocks.length = processedBlocks.items.length;
 
         grunt.file.write(path.resolve(options.base, options.storage), JSON.stringify(processedBlocks, null, '\t'));
 
-        grunt.log.writeln();
+        grunt.log.writeln('');
 
         grunt.log.oklns('Extracted ' + existingFiles.length + ' unique partials.');
     });
@@ -147,6 +147,7 @@ module.exports = function (grunt) {
      * process partial
      *
      * @param block
+     * @param origin
      * @returns {*}
      */
     function processPartial(block, origin) {
@@ -293,17 +294,16 @@ module.exports = function (grunt) {
      * @returns {{}}
      */
     function getBlockOptions(annotation) {
-        var optionValues = annotation.split(/\w+\:/).map(function (item) {
-            return item.replace(/<\!--\s?|\s?-->|^\s+|\s+$/, '');
+        var optionValues = annotation.split(/\w+:/).map(function (item) {
+            return item.replace(/<!--\s?|\s?-->|^\s+|\s+$/, '');
         }).filter(function (item) {
             return !!item.length;
         });
-        var optionKeys = annotation.match(/(\w+)\:/g).map(function (item) {
+        var optionKeys = annotation.match(/(\w+):/g).map(function (item) {
             return item.replace(/[^\w]/, '');
         });
 
         var opts = {};
-        var patternMultiple = new RegExp(/\:/);
 
         optionValues.forEach(function (v, i) {
             var k = optionKeys[i];
@@ -315,9 +315,9 @@ module.exports = function (grunt) {
             // Treat option value as array if it has a colon
             // @todo: Allow escaped colons to be ignored
             // RegEx lookbehind negate does not work :(
-            // Should be /(?<!\\)\:/
-            if (v.match(patternMultiple)) {
-                v = v.split(patternMultiple);
+            // Should be /(?<!\\):/
+            if (v.indexOf(':') > -1) {
+                v = v.split(':');
             }
 
             opts[k] = v;
@@ -383,7 +383,7 @@ module.exports = function (grunt) {
             }
 
             // Cleanup: Remove leading and trailing " and ', replace " by ' (e.g. in stringified objects)
-            preparedVal = preparedVal.replace(/^[\'\"]|[\'\"]$/g, '').replace(/\\?\"/g, '\'');
+            preparedVal = preparedVal.replace(/^['"]|['"]$/g, '').replace(/\\?"/g, "'");
 
             // Build data parameter: data-name="value"
             param = 'data-' + el + '="' + preparedVal + '"';
@@ -398,7 +398,7 @@ module.exports = function (grunt) {
      * Formalize any given value as wrap object
      *
      * @param wrap
-     * @returns {{before: string, after: string}}
+     * @returns {{before: '', after: ''}}
      */
     function formalizeWrap(wrap) {
         var result = {before: '', after: ''};
@@ -415,7 +415,7 @@ module.exports = function (grunt) {
             // crappy method getting the value of the first and second item in object
             for (el in wrap) {
                 if (!wrap.hasOwnProperty(el)) {
-                    return;
+                    continue;
                 }
 
                 if (i < 2) {
