@@ -175,9 +175,9 @@ module.exports = function (grunt) {
      */
     function getPartials(lines) {
         var block;
-        var add = false;
+        var addCurrentLine = false;
         var matches;
-        var match;
+        var annotationBegin;
         var blocks = [];
         var dest = '';
         var matchFilename;
@@ -193,33 +193,33 @@ module.exports = function (grunt) {
         // Import blocks from file
         lines.forEach(function (line) {
             // add block to list and stop adding lines when close annotation is present in current line
-            if (line.match(options.pattern[1])) {
-                add = false;
+            if (line.match(options.pattern[1]) && addCurrentLine) {
+                addCurrentLine = false;
                 blocks.push(block);
             }
 
             // add lines if set in previous step until a close annotation is reached
-            if (add) {
+            if (addCurrentLine) {
                 block.lines.push(line);
             }
 
             // create block if opening annotation is present in current line
             if (matches = line.match(options.pattern[0])) {
-                add = true;
-                match = matches[1];
+                addCurrentLine = true;
+                annotationBegin = matches[1];
                 blockOptions = getBlockOptions(matches[0]);
 
                 // get filename from extract option
-                matchFilename = match.match(/\/([^\/^\s]+)$/i);
+                matchFilename = annotationBegin.match(/\/([^\/^\s]+)$/i);
                 filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : match;
 
                 // get path from extract option
-                matchPath = match.match(/^([^\s]+\/)/i);
+                matchPath = annotationBegin.match(/^([^\s]+\/)/i);
                 path = (matchPath && matchPath.length > -1) ? matchPath[1] : '';
 
                 // set first folder as category name if not in item options
                 if (!blockOptions.hasOwnProperty('category')) {
-                    matchCategory = match.match(/^([^\s\/]+)\//i);
+                    matchCategory = annotationBegin.match(/^([^\s\/]+)\//i);
                     category = (matchCategory && matchCategory.length > -1) ? matchCategory[1] : false;
                     category = typeof category === 'string' ? _.startCase(category) : false;
                 } else {
@@ -236,7 +236,7 @@ module.exports = function (grunt) {
                 }
 
                 // remove nested path from dest if required
-                dest = options.flatten ? filename : match;
+                dest = options.flatten ? filename : annotationBegin;
 
                 // prepare block data
                 block = {
