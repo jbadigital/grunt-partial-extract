@@ -38,6 +38,6 @@
     "gruntplugin"
   ],
   "dependencies": {
-    "lodash": "^3.3.0"
+    "lodash": "^3.4.0"
   }
 }
