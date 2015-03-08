@@ -46,13 +46,10 @@ grunt.initConfig({
         // <!-- extract:individual-file.html optional1:value optional2:value1:value2 -->
         //   partial
         // <!-- endextract -->
-        pattern: [
-            /<\!--\s*extract:\s*(([\w\/-_]+\/)([\w_\.-]+))(.*)-->/,
-            /<\!--\s*endextract\s*-->/
-        ],
+        patternExtract: new RegExp(/<!--\s*extract:(.|\n)*?endextract\s?-->/g),
         // Wrap partial in template element and add options as data attributes
-        partialWrap: {
-            before: '<template id="partial" {{options}}>',
+        templateWrap: {
+            before: '<template id="partial" {{wrapData}}>',
             after:  '</template>'
         },
         // Wrap component for viewing purposes: e.g. add production context
@@ -66,7 +63,10 @@ grunt.initConfig({
         // <div class="context">
         //   partial
         // </div>
-        viewWrap: [],
+        viewWrap: {
+            before: '',
+            after: ''
+        },
         // Base directory
         base: './inventory',
         // Partial directory where individual partial files will be stored (relative to base)
