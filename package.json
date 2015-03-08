@@ -1,7 +1,7 @@
 {
   "name": "grunt-partial-extract",
   "description": "Extract partials from any text based file and write to distinct file.",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "homepage": "https://github.com/tilmanjusten/grunt-partial-extract",
   "author": {
     "name": "Tilman Justen",
