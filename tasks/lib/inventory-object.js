@@ -235,7 +235,7 @@ module.exports = function (data) {
         options:        data.options,
         optionsData:    data.optionsData,
         origin:         data.origin,
-        partial:        data.partials,
+        partial:        data.partial,
         path:           data.path,
         template:       data.template,
         view:           data.view
