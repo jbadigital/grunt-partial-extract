@@ -17,6 +17,7 @@ module.exports = function (grunt) {
     var _ = require('lodash');
     var path = require('path');
     var options = {};
+    var InventoryObject = require('./lib/inventory-object');
 
     grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to individual files.', function () {
         // Merge task-specific and/or target-specific options with these defaults.
@@ -31,7 +32,7 @@ module.exports = function (grunt) {
             patternPartial: new RegExp(/<!--\s*((?:.|\n)*?)-->((?:.|\n)*?)<!--\s*endextract\s*-->/i),
             // Wrap partial in template element and add options as data attributes
             templateWrap: {
-                before: '<template id="partial" {{options}}>',
+                before: '<template id="partial" {{wrapData}}>',
                 after:  '</template>'
             },
             // Wrap component for viewing purposes: e.g. add production context
@@ -91,7 +92,15 @@ module.exports = function (grunt) {
 
             // Write blocks to separate files
             blocks.map(function (block) {
-                var processed = processPartial(block, file.src);
+                // init inventory object
+                var opts = {
+                    flatten: options.flatten,
+                    origin: file.src
+                };
+                var processed = new InventoryObject(opts);
+
+                // process block
+                processed.parseData(block.content, block.options);
 
                 if (existingFiles.indexOf(processed.dest) !== -1) {
                     grunt.verbose.warn("Skip file " + processed.dest + " which already exists.");
@@ -144,143 +153,6 @@ module.exports = function (grunt) {
     }
 
     /**
-     * process partial
-     *
-     * @param block
-     * @param origin
-     * @returns {*}
-     */
-    function processPartial(block, origin) {
-        var category = '';
-        var name = '';
-
-        // continue if path is empty
-        if (!block.options.hasOwnProperty('extract')) {
-            return;
-        }
-
-        // get filename from extract option
-        var matchFilename = block.options.extract.match(/\/([^\/^\s]+)$/i);
-        var filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : block.options.extract;
-
-        // get path from extract option
-        var matchPath = block.options.extract.match(/^([^\s]+\/)/i);
-        var path = (matchPath && matchPath.length > -1) ? matchPath[1] : '';
-
-        // set first folder as category name if not in item options
-        if (!block.options.hasOwnProperty('category')) {
-            var matchCategory = block.options.extract.match(/^([^\s\/]+)\//i);
-            category = (matchCategory && matchCategory.length > -1) ? matchCategory[1] : false;
-            category = typeof category === 'string' ? _.startCase(category) : false;
-        } else {
-            category = _.startCase(block.options.category);
-        }
-
-        // get name from filename if not in options
-        if (!block.options.hasOwnProperty('name')) {
-            var matchName = filename.match(/^([^\s]+)\./i);
-            name = (matchName && matchName.length > -1) ? matchName[1] : '';
-            name = typeof name === 'string' ? _.startCase(name) : '';
-        } else {
-            name = block.options.name;
-        }
-
-        // remove nested path from dest if required
-        var dest = options.flatten ? filename : block.options.extract;
-        var lines = block.content.split(grunt.util.linefeed).map(properIndentation);
-        var leadingWhitespace = lines.map(countWhitespace);
-        var crop = leadingWhitespace.reduce(getLeadingWhitespace);
-        var viewWrap = block.options.wrap;
-        var templateWrapOptions = optionsToDataString(block.options);
-
-        lines = trimLines(lines, crop);
-
-        var viewLines = util._extend([], lines);
-        var templateLines = util._extend([], lines);
-
-        // wrap partial if inline option viewWrap: exists
-        if (viewWrap.before.length) {
-            viewLines = raiseIndent(viewLines);
-            viewLines.unshift('');
-            viewLines.unshift(viewWrap.before);
-            viewLines.push('');
-            viewLines.push(viewWrap.after);
-        }
-
-        // add templateWrap
-        if (typeof options.templateWrap === 'object') {
-            var before = options.templateWrap.before || '';
-            var after = options.templateWrap.after || '';
-
-            before = before.replace('{{options}}', templateWrapOptions);
-            after = after.replace('{{options}}', templateWrapOptions);
-
-            templateLines.unshift(before);
-            templateLines.push(after);
-        }
-
-        return {
-            category: category,
-            dest: dest,
-            filename: filename,
-            lines: lines,
-            name: name,
-            options: block.options,
-            optionsData: templateWrapOptions,
-            origin: origin,
-            partial: lines.join(grunt.util.linefeed),
-            path: path,
-            template: templateLines.join(grunt.util.linefeed),
-            view: viewLines.join(grunt.util.linefeed)
-        };
-    }
-
-    /**
-     * replace tabs by indent value
-     *
-     * @param line
-     * @return string
-     */
-    function properIndentation(line) {
-        return line.replace(/\t/, options.indent || '');
-    }
-
-    /**
-     * count leading whitespace chars
-     *
-     * @param line
-     * @return integer
-     */
-    function countWhitespace(line) {
-        // return a somewhat high value for empty lines
-        return line.length ? line.match(/^\s*/)[0].length : 9999;
-    }
-
-    /**
-     * get lowest value of leading whitespace in a given block
-     *
-     * @param previous
-     * @param current
-     * @returns integer
-     */
-    function getLeadingWhitespace(previous, current) {
-        return previous <= current ? previous : current;
-    }
-
-    /**
-     * trim given number of leading characters
-     *
-     * @param lines
-     * @param num Number of chars to be removed
-     * @returns Array
-     */
-    function trimLines(lines, num) {
-        return lines.map(function (line) {
-            return line.substr(num);
-        });
-    }
-
-    /**
      * read options from annotation
      *
      * e.g.: <!-- extract:teaser/content-teaser--small.html wrap:<div class="teaser-list teaser-list--small">:</div> -->
@@ -327,71 +199,6 @@ module.exports = function (grunt) {
         opts.wrap = formalizeWrap(opts.wrap || options.viewWrap);
 
         return opts;
-    }
-
-    /**
-     * raise offset in lines
-     *
-     * @param lines
-     * @param offset
-     * @returns {Array}
-     */
-    function raiseIndent(lines, offset) {
-        offset = offset || '    ';
-
-        return lines.map(function (line) {
-            return offset + line;
-        });
-    }
-
-    /**
-     * Format options as string of HTML data parameters
-     *
-     * @param options
-     * @returns {string}
-     */
-    function optionsToDataString(options) {
-        if (typeof options !== 'object') {
-            return '';
-        }
-
-        var prepared = [];
-        var el;
-        var processedOptions = _.assign({}, options);
-
-        // prepare wrap option
-        if (processedOptions.hasOwnProperty('wrap')) {
-            processedOptions['wrap-before'] = processedOptions.wrap.before;
-            processedOptions['wrap-after'] = processedOptions.wrap.after;
-
-            delete(processedOptions.wrap);
-        }
-
-        // create data attributes
-        for (el in processedOptions) {
-            if (processedOptions.hasOwnProperty(el) === false) {
-                continue;
-            }
-
-            var value = processedOptions[el];
-            var preparedVal = JSON.stringify(processedOptions[el]);
-            var param = '';
-
-            // Ignore callbacks
-            if (typeof value === 'function') {
-                continue;
-            }
-
-            // Cleanup: Remove leading and trailing " and ', replace " by ' (e.g. in stringified objects)
-            preparedVal = preparedVal.replace(/^['"]|['"]$/g, '').replace(/\\?"/g, "'");
-
-            // Build data parameter: data-name="value"
-            param = 'data-' + el + '="' + preparedVal + '"';
-
-            prepared.push(param);
-        }
-
-        return prepared.join(' ');
     }
 
     /**
