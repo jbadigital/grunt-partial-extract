@@ -28,8 +28,6 @@ module.exports = function (grunt) {
             //   partial
             // <!-- endextract -->
             patternExtract: new RegExp(/<!--\s*extract:(.|\n)*?endextract\s?-->/g),
-            // Get partial options and content
-            patternPartial: new RegExp(/<!--\s*((?:.|\n)*?)-->((?:.|\n)*?)<!--\s*endextract\s*-->/i),
             // Wrap partial in template element and add options as data attributes
             templateWrap: {
                 before: '<template id="partial" {{wrapData}}>',
@@ -93,14 +91,11 @@ module.exports = function (grunt) {
             // Write blocks to separate files
             blocks.map(function (block) {
                 // init inventory object
-                var opts = {
-                    flatten: options.flatten,
-                    origin: file.src
-                };
-                var processed = new InventoryObject(opts);
+                var opts = _.assign({}, options, { origin: file.src });
+                var processed = new InventoryObject();
 
                 // process block
-                processed.parseData(block.content, block.options);
+                processed.parseData(block, opts);
 
                 if (existingFiles.indexOf(processed.dest) !== -1) {
                     grunt.verbose.warn("Skip file " + processed.dest + " which already exists.");
@@ -136,106 +131,6 @@ module.exports = function (grunt) {
      * @returns {Array}
      */
     function getPartials(src) {
-        var blocks = src.match(options.patternExtract);
-        var partials = [];
-
-        blocks.forEach(function (block) {
-            var parts = block.match(options.patternPartial);
-
-            // prepare block data
-            partials.push({
-                options: getBlockOptions(parts[1]),
-                content: _.trim(parts[2])
-            });
-        });
-
-        return partials;
-    }
-
-    /**
-     * read options from annotation
-     *
-     * e.g.: <!-- extract:teaser/content-teaser--small.html wrap:<div class="teaser-list teaser-list--small">:</div> -->
-     * gets:
-     * {
-     *   extract: 'teaser/content-teaser--small.html',
-     *   viewWrap: {before: '<div class="teaser-list teaser-list--small">', after: '</div>'}
-     * }
-     *
-     * @param annotation
-     * @returns {{}}
-     */
-    function getBlockOptions(annotation) {
-        var optionValues = annotation.split(/\w+:/).map(function (item) {
-            return item.replace(/<!--\s?|\s?-->|^\s+|\s+$/, '');
-        }).filter(function (item) {
-            return !!item.length;
-        });
-        var optionKeys = annotation.match(/(\w+):/g).map(function (item) {
-            return item.replace(/[^\w]/, '');
-        });
-
-        var opts = {};
-
-        optionValues.forEach(function (v, i) {
-            var k = optionKeys[i];
-
-            if (typeof k !== 'string') {
-                return;
-            }
-
-            // Treat option value as array if it has a colon
-            // @todo: Allow escaped colons to be ignored
-            // RegEx lookbehind negate does not work :(
-            // Should be /(?<!\\):/
-            if (v.indexOf(':') > -1) {
-                v = v.split(':');
-            }
-
-            opts[k] = v;
-        });
-
-        // Process options
-        opts.wrap = formalizeWrap(opts.wrap || options.viewWrap);
-
-        return opts;
-    }
-
-    /**
-     * Formalize any given value as wrap object
-     *
-     * @param wrap
-     * @returns {{before: '', after: ''}}
-     */
-    function formalizeWrap(wrap) {
-        var result = {before: '', after: ''};
-
-        if ((typeof wrap === 'string' && wrap.length > 0) || typeof wrap === 'number') {
-            result.before = result.after = wrap;
-        } else if  (Array.isArray(wrap) && wrap.length > 0) {
-            result.before = [].slice.call(wrap, 0, 1)[0];
-            result.after = wrap.length > 1 ? [].slice.call(wrap, 1, 2)[0] : result.before;
-        } else if (_.isPlainObject(wrap)) {
-            var i = 0;
-            var el;
-
-            // crappy method getting the value of the first and second item in object
-            for (el in wrap) {
-                if (!wrap.hasOwnProperty(el)) {
-                    continue;
-                }
-
-                if (i < 2) {
-                    result.before = wrap[el];
-                }
-
-                i++;
-            }
-
-            // set value of after to the value of before if after is empty
-            result.after = result.after.length < 1 ? result.before : result.after;
-        }
-
-        return result;
+        return src.match(options.patternExtract);
     }
 };

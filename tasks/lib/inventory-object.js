@@ -51,6 +51,98 @@ function raiseIndent(lines, offset) {
 }
 
 /**
+ * Formalize any given value as wrap object
+ *
+ * @param wrap
+ * @returns {{before: '', after: ''}}
+ */
+function formalizeWrap(wrap) {
+    var result = {before: '', after: ''};
+
+    if ((typeof wrap === 'string' && wrap.length > 0) || typeof wrap === 'number') {
+        result.before = result.after = wrap;
+    } else if  (Array.isArray(wrap) && wrap.length > 0) {
+        result.before = [].slice.call(wrap, 0, 1)[0];
+        result.after = wrap.length > 1 ? [].slice.call(wrap, 1, 2)[0] : result.before;
+    } else if (_.isPlainObject(wrap)) {
+        var i = 0;
+        var el;
+
+        // crappy method getting the value of the first and second item in object
+        for (el in wrap) {
+            if (!wrap.hasOwnProperty(el)) {
+                continue;
+            }
+
+            if (i < 2) {
+                result.before = wrap[el];
+            }
+
+            i++;
+        }
+
+        // set value of after to the value of before if after is empty
+        result.after = result.after.length < 1 ? result.before : result.after;
+    }
+
+    return result;
+}
+
+/**
+ * read options from annotation
+ *
+ * e.g.: <!-- extract:teaser/content-teaser--small.html wrap:<div class="teaser-list teaser-list--small">:</div> -->
+ * gets:
+ * {
+     *   extract: 'teaser/content-teaser--small.html',
+     *   viewWrap: {before: '<div class="teaser-list teaser-list--small">', after: '</div>'}
+     * }
+ *
+ * @param annotation
+ * @param defaults
+ * @returns {{}}
+ */
+function getBlockOptions(annotation, defaults) {
+    var optionValues = annotation.split(/\w+:/).map(function (item) {
+        return item.replace(/<!--\s?|\s?-->|^\s+|\s+$/, '');
+    }).filter(function (item) {
+        return !!item.length;
+    });
+    var optionKeys = annotation.match(/(\w+):/g).map(function (item) {
+        return item.replace(/[^\w]/, '');
+    });
+
+    defaults = defaults || {
+        viewWrap: {before: '', after: ''}
+    };
+
+    var opts = {};
+
+    optionValues.forEach(function (v, i) {
+        var k = optionKeys[i];
+
+        if (typeof k !== 'string') {
+            return;
+        }
+
+        // Treat option value as array if it has a colon
+        // @todo: Allow escaped colons to be ignored
+        // RegEx lookbehind negate does not work :(
+        // Should be /(?<!\\):/
+        if (v.indexOf(':') > -1) {
+            v = v.split(':');
+        }
+
+        opts[k] = v;
+    });
+
+    // Process options
+    opts.wrap = formalizeWrap(opts.wrap || defaults.viewWrap);
+
+    return opts;
+}
+
+/**
  * Format options as string of HTML data parameters
  *
  * @param options
@@ -115,15 +207,22 @@ function trimLines(lines, num) {
 
 /**
  * module
- * @param options
  * @param data
  * @returns {*}
  */
-module.exports = function (options, data) {
+module.exports = function (data) {
 
     "use strict";
 
-    options = options || {flatten: false, origin: ''};
+    // default options
+    var defaultParseOptions = {
+        flatten: false,
+        indent: '    ',
+        origin: '',
+        templateWrap: { before: '', after: '' },
+        viewWrap: { before: '', after: '' }
+    };
+
     data = data || {};
 
     // set default properties
@@ -135,7 +234,7 @@ module.exports = function (options, data) {
         name:           data.name,
         options:        data.options,
         optionsData:    data.optionsData,
-        origin:         options.origin,
+        origin:         data.origin,
         partial:        data.partials,
         path:           data.path,
         template:       data.template,
@@ -145,56 +244,61 @@ module.exports = function (options, data) {
     /**
      * parse data from extracted part
      *
-     * @param content
+     * @param src
      * @param opts
      */
-    inventoryObject.parseData = function(content, opts) {
+    inventoryObject.parseData = function(src, opts) {
+        opts = _.assign({}, defaultParseOptions, opts);
+
+        var parts = src.match(/<!--\s*((?:.|\n)*?)-->((?:.|\n)*?)<!--\s*endextract\s*-->/i);
+        var blockOpts = getBlockOptions(parts[1], opts);
+        var content = _.trim(parts[2]);
         var category = '';
         var name = '';
 
         // continue if path is empty
-        if (!opts.hasOwnProperty('extract')) {
+        if (!blockOpts.hasOwnProperty('extract')) {
             return;
         }
 
         // get filename from extract option
-        var matchFilename = opts.extract.match(/\/([^\/^\s]+)$/i);
-        var filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : opts.extract;
+        var matchFilename = blockOpts.extract.match(/\/([^\/^\s]+)$/i);
+        var filename = (matchFilename && matchFilename.length > -1) ? matchFilename[1] : blockOpts.extract;
 
         // get path from extract option
-        var matchPath = opts.extract.match(/^([^\s]+\/)/i);
+        var matchPath = blockOpts.extract.match(/^([^\s]+\/)/i);
         var path = (matchPath && matchPath.length > -1) ? matchPath[1] : '';
 
         // set first folder as category name if not in item options
-        if (!opts.hasOwnProperty('category')) {
-            var matchCategory = opts.extract.match(/^([^\s\/]+)\//i);
+        if (!blockOpts.hasOwnProperty('category')) {
+            var matchCategory = blockOpts.extract.match(/^([^\s\/]+)\//i);
             category = (matchCategory && matchCategory.length > -1) ? matchCategory[1] : false;
             category = typeof category === 'string' ? _.startCase(category) : false;
         } else {
-            category = _.startCase(opts.category);
+            category = _.startCase(blockOpts.category);
         }
 
         // get name from filename if not in options
-         if (!opts.hasOwnProperty('name')) {
+         if (!blockOpts.hasOwnProperty('name')) {
              var matchName = filename.match(/^([^\s]+)\./i);
              name = (matchName && matchName.length > -1) ? matchName[1] : '';
              name = typeof name === 'string' ? _.startCase(name) : '';
          } else {
-             name = opts.name;
+             name = blockOpts.name;
          }
 
         // remove nested path from dest if required
-        var dest = options.flatten ? filename : opts.extract;
+        var dest = opts.flatten ? filename : blockOpts.extract;
         var lines = content.split('\n').map(function(line) {
             // remove possibly existing CR
             return _.trimRight(line);
         }).map(function (line) {
-            return properIndentation(line, options.indent);
+            return properIndentation(line, opts.indent);
         });
         var leadingWhitespace = lines.map(countWhitespace);
         var crop = leadingWhitespace.reduce(getLeadingWhitespace);
-        var viewWrap = opts.wrap;
-        var templateWrapOptions = optionsToDataString(opts);
+        var viewWrap = blockOpts.wrap;
+        var templateWrapOptions = optionsToDataString(blockOpts);
 
         lines = trimLines(lines, crop);
 
@@ -211,9 +315,9 @@ module.exports = function (options, data) {
         }
 
         // add templateWrap
-        if (typeof options.templateWrap === 'object') {
-            var before = options.templateWrap.before || '';
-            var after = options.templateWrap.after || '';
+        if (typeof opts.templateWrap === 'object') {
+            var before = opts.templateWrap.before || '';
+            var after = opts.templateWrap.after || '';
 
             before = before.replace('{{wrapData}}', templateWrapOptions);
             after = after.replace('{{wrapData}}', templateWrapOptions);
@@ -228,7 +332,7 @@ module.exports = function (options, data) {
         this.filename       = filename;
         this.lines          = lines;
         this.name           = name;
-        this.options        = opts;
+        this.options        = blockOpts;
         this.optionsData    = templateWrapOptions;
         this.partial        = lines.join(os.EOL);
         this.path           = path;
