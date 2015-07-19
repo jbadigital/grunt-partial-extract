@@ -71,8 +71,6 @@ grunt.initConfig({
         base: './inventory',
         // Partial directory where individual partial files will be stored (relative to base)
         partials: './partials',
-        // Remove path from partial destination, put files to partials directory
-        flatten: false,
         // Store inventory data as JSON file
         storage: 'partial-extract.json',
         // Enable storing partials as individual files
