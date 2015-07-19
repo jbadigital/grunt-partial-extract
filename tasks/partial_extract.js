@@ -66,7 +66,6 @@ module.exports = function (grunt) {
         grunt.verbose.writeln('Files: ' + this.files.length);
         grunt.log.writeln('');
 
-        var existingFiles = [];
         var processedBlocks = {
             options: options,
             length: 0,
@@ -96,20 +95,12 @@ module.exports = function (grunt) {
 
                 // process block
                 processed.parseData(block, opts);
-
-                if (existingFiles.indexOf(processed.dest) !== -1) {
-                    grunt.verbose.warn("Skip file " + processed.dest + " which already exists.");
-
-                    return;
-                }
-
-                existingFiles.push(processed.dest);
                 processed.setProperty('origin', file.dest);
 
                 processedBlocks.items.push(processed);
 
                 if (options.storePartials) {
-                    grunt.file.write(path.resolve(options.base, options.partials, processed.dest), processed.template);
+                    grunt.file.write(path.resolve(options.base, options.partials, processed.id), processed.template);
                 }
             });
 
@@ -122,7 +113,7 @@ module.exports = function (grunt) {
 
         grunt.log.writeln('');
 
-        grunt.log.oklns('Extracted ' + existingFiles.length + ' unique partials.');
+        grunt.log.oklns('Extracted ' + processedBlocks.length + ' partials.');
     });
 
     /**
