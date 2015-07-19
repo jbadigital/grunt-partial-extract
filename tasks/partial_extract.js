@@ -69,6 +69,7 @@ module.exports = function (grunt) {
             length: 0,
             items: []
         };
+        var uniqueBlocks = [];
 
         // Iterate over all specified file groups.
         this.files.forEach(function (file) {
@@ -90,6 +91,7 @@ module.exports = function (grunt) {
                 // init inventory object
                 var opts = _.assign({}, options);
                 var processed = new InventoryObject();
+                var isDuplicate = false;
 
                 // process block
                 processed.parseData(block, opts);
@@ -97,7 +99,14 @@ module.exports = function (grunt) {
 
                 processedBlocks.items.push(processed);
 
-                if (options.storePartials) {
+                if (uniqueBlocks.indexOf(processed.id) < 0) {
+                    uniqueBlocks.push(processed.id);
+                } else {
+                    isDuplicate = true;
+                }
+
+                // store partial if not already happen
+                if (options.storePartials && !isDuplicate) {
                     grunt.file.write(path.resolve(options.base, options.partials, processed.id), processed.template);
                 }
             });
@@ -111,7 +120,7 @@ module.exports = function (grunt) {
 
         grunt.log.writeln('');
 
-        grunt.log.oklns('Extracted ' + processedBlocks.length + ' partials.');
+        grunt.log.oklns('Extracted ' + processedBlocks.length + ' partials, ' + uniqueBlocks.length + ' unique.');
     });
 
     /**
