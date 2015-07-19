@@ -17,7 +17,7 @@ module.exports = function (grunt) {
     var _ = require('lodash');
     var path = require('path');
     var options = {};
-    var InventoryObject = require('./lib/inventory-object');
+    var InventoryObject = require('./../lib/inventory-object');
 
     grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to individual files.', function () {
         // Merge task-specific and/or target-specific options with these defaults.
