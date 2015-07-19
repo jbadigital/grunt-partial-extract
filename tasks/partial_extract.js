@@ -91,7 +91,7 @@ module.exports = function (grunt) {
             // Write blocks to separate files
             blocks.map(function (block) {
                 // init inventory object
-                var opts = _.assign({}, options, { origin: file.src });
+                var opts = _.assign({}, options);
                 var processed = new InventoryObject();
 
                 // process block
@@ -104,6 +104,7 @@ module.exports = function (grunt) {
                 }
 
                 existingFiles.push(processed.dest);
+                processed.setProperty('origin', file.dest);
 
                 processedBlocks.items.push(processed);
 
