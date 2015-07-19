@@ -19,7 +19,7 @@ module.exports = function (grunt) {
     var options = {};
     var InventoryObject = require('./../lib/inventory-object');
 
-    grunt.registerMultiTask('partial-extract', 'Extract partials from any text based file and write to individual files.', function () {
+    grunt.registerMultiTask('partial-extract', 'Extract partials from any text based files and write json inventory file.', function () {
         // Merge task-specific and/or target-specific options with these defaults.
         options = this.options({
             // Find partials by pattern:
