@@ -114,7 +114,8 @@ module.exports = function (grunt) {
             grunt.verbose.writeln('');
         });
 
-        processedBlocks.length = processedBlocks.items.length;
+        processedBlocks.lengthUnique = uniqueBlocks.length;
+        processedBlocks.lengthTotal = processedBlocks.items.length;
 
         grunt.file.write(path.resolve(options.base, options.storage), JSON.stringify(processedBlocks, null, '\t'));
 
