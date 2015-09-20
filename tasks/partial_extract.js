@@ -83,6 +83,10 @@ module.exports = function (grunt) {
             }
 
             var blocks = getPartials(content);
+            var resources = getResources(content, file.src);
+
+            // put resources to the options
+            options.resources = options.resources ? _.assign({}, resources, options.resources) : resources;
 
             grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
 
@@ -117,7 +121,7 @@ module.exports = function (grunt) {
         processedBlocks.lengthUnique = uniqueBlocks.length;
         processedBlocks.lengthTotal = processedBlocks.items.length;
 
-        grunt.file.write(path.resolve(options.base, options.storage), JSON.stringify(processedBlocks, null, '\t'));
+        grunt.file.write(options.storage, JSON.stringify(processedBlocks, null, '\t'));
 
         grunt.log.writeln('');
 
@@ -132,5 +136,143 @@ module.exports = function (grunt) {
      */
     function getPartials(src) {
         return src.match(options.patternExtract);
+    }
+
+    /**
+     * extract resource path of
+     * - javascript resources in <head> and <body>
+     * - stylesheet resources in <head>
+     * - <style> in <head>
+     * - <meta> in <head>
+     * - classnames of <body>
+     * - classnames of <html>
+     *
+     * @param src
+     * @param filepath
+     */
+    function getResources(src, filepath) {
+        var head = src.match(/<head((.|\n)*)<\/head>/i)[1];
+        var body = src.match(/<body((.|\n)*)<\/body>/i)[1];
+        var rootClassnames = src.match(/<html.+class="([^"]*)">/i);
+        var bodyClassnames = src.match(/<body.+class="([^"]*)">/i);
+
+        // defaults
+        var data = {
+            classnames: {
+                root: rootClassnames && rootClassnames.length ? rootClassnames[1] : '',
+                body: bodyClassnames && bodyClassnames.length ? bodyClassnames[1] : ''
+            },
+            meta: [],
+            scriptsFoot: {
+                files: [],
+                inline: []
+            },
+            scriptsHead: {
+                files: [],
+                inline: []
+            },
+            stylesHead: {
+                files: [],
+                inline: []
+            }
+        };
+
+        // <head> section
+        if (head && head.length > 0) {
+            // stylesheet resources
+            data.stylesHead.files = getStylesheetResources(head);
+
+            // inline styles
+            data.stylesHead.inline = getInlineStyles(head);
+
+            // script resources
+            data.scriptsHead.files = getScriptResources(head);
+
+            // inline scripts, get script tags without src: <script> or <script type="xyz">, lazy mode
+            data.scriptsHead.inline = getInlineScripts(head);
+
+            // <meta>
+            data.meta = head.match(/<meta[^>]+>/ig);
+        }
+
+        // <body> section
+        if (body && body.length) {
+            data.scriptsFoot.files = getScriptResources(body);
+            data.scriptsFoot.inline = getInlineScripts(body);
+        }
+
+        return data;
+    }
+
+    /**
+     * get paths of stylesheet resources
+     *
+     * @param src
+     * @returns {Array}
+     */
+    function getStylesheetResources(src) {
+        var resources = src.match(/<link.+rel="stylesheet".*>/gi);
+
+        if (!resources || (resources && resources.length < 1)) {
+            return [];
+        }
+
+        return resources.map(function (match) {
+            return match.match(/href="([^"]+)"/i)[1];
+        });
+    }
+
+    /**
+     * get inline styles
+     *
+     * @param src
+     * @returns {Array}
+     */
+    function getInlineStyles(src) {
+        var resources = src.match(/<style[^>]*?>((.|\n)*?)<\/style>/gi);
+
+        if (!resources || (resources && resources.length < 1)) {
+            return [];
+        }
+
+        return resources.map(function (match) {
+            return match.match(/<style[^>]*>((.|\n)*)<\/style>/i)[1];
+        });
+    }
+
+    /**
+     * get paths of script resources
+     *
+     * @param src
+     * @returns {Array}
+     */
+    function getScriptResources(src) {
+        var resources = src.match(/<script.+src=".*>/gi);
+
+        if (!resources || (resources && resources.length < 1)) {
+            return [];
+        }
+
+        return resources.map(function (match) {
+            return match.match(/src="([^"]+)"/i)[1];
+        });
+    }
+
+    /**
+     * get inline scripts
+     *
+     * @param src
+     * @returns {Array}
+     */
+    function getInlineScripts(src) {
+        var resources = src.match(/<script(?:.+type="[^"]+")?>((.|\n)*?)<\/script>/gi);
+
+        if (!resources || (resources && resources.length < 1)) {
+            return [];
+        }
+
+        return resources.map(function (match) {
+            return match.match(/<script[^>]*>((.|\n)*)<\/script>/i)[1];
+        });
     }
 };
