@@ -46,8 +46,8 @@ module.exports = function (grunt) {
 
         var processedBlocks = {
             options: options,
-            length: 0,
-            items: []
+            lengthTotal: 0,
+            lengthUnique: 0
         };
         var uniqueBlocks = [];
 
@@ -86,6 +86,7 @@ module.exports = function (grunt) {
                 }
 
                 processedBlocks[processed.brand].contentAreas.push(processed);
+                processedBlocks.lengthTotal++;
 
                 if (uniqueBlocks.indexOf(processed.id) < 0) {
                     uniqueBlocks.push(processed.id);
@@ -95,7 +96,7 @@ module.exports = function (grunt) {
 
                 // store partial if not already happen
                 if (options.storePartials && !isDuplicate) {
-                    grunt.file.write(path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html"), processed.partial);
+                    grunt.file.write(path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html"), processed.content);
                 }
             });
 
@@ -103,7 +104,6 @@ module.exports = function (grunt) {
         });
 
         processedBlocks.lengthUnique = uniqueBlocks.length;
-        processedBlocks.lengthTotal = processedBlocks.items.length;
 
         grunt.file.write(options.storage, JSON.stringify(processedBlocks, null, '\t'));
 
