@@ -80,8 +80,11 @@ module.exports = function (grunt) {
                 // process block
                 processed.parseData(block, opts);
 
-                processedBlocks.setProperty(processed.brand, {});
-                processedBlocks[processed.brand].setProperty('contentAreas', []);
+                if (!processedBlocks.hasOwnProperty(processed.brand)) {
+                    processedBlocks[processed.brand] = {};
+                    processedBlocks[processed.brand].contentAreas = [];
+                }
+
                 processedBlocks[processed.brand].contentAreas.push(processed);
 
                 if (uniqueBlocks.indexOf(processed.id) < 0) {
