@@ -79,10 +79,9 @@ module.exports = function (grunt) {
 
                 // process block
                 processed.parseData(block, opts);
-                
-                // processedBlocks.items.push(processed);
-                processedBlocks[processed.brand] = {};
-                processedBlocks[processed.brand].contentAreas = []
+
+                processedBlocks.setProperty(processed.brand, {});
+                processedBlocks[processed.brand].setProperty('contentAreas', []);
                 processedBlocks[processed.brand].contentAreas.push(processed);
 
                 if (uniqueBlocks.indexOf(processed.id) < 0) {
