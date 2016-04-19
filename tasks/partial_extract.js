@@ -83,7 +83,7 @@ module.exports = function (grunt) {
                 processed.parseData(block, opts);
                 processed.contentFile = options.base + '/' + options.partials + '/' + processed.options.brand + '/' + processed.name + ".html";
                 blockContent = processed.content;
-                processed.content = "";
+                processed = _.omit(processed, 'content');
                 
                 processedBlocks.contentAreas.push(processed);
                 
