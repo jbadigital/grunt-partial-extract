@@ -47,7 +47,8 @@ module.exports = function (grunt) {
         var processedBlocks = {
             options: options,
             lengthTotal: 0,
-            lengthUnique: 0
+            lengthUnique: 0,
+            contentAreas: []
         };
         var uniqueBlocks = [];
 
@@ -76,14 +77,16 @@ module.exports = function (grunt) {
                 var opts = _.assign({}, options);
                 var processed = new InventoryObject();
                 var isDuplicate = false;
+                var blockContent = '';
 
                 // process block
                 processed.parseData(block, opts);
-                processedBlocks.contentAreas = [];
-
+                processed.contentFile = options.base + '/' + options.partials + '/' + processed.options.brand + '/' + processed.name + ".html";
+                blockContent = processed.content;
+                processed.content = "";
+                
                 processedBlocks.contentAreas.push(processed);
-                //remove the content from processedBlocks
-                processedBlocks.contentAreas[processedBlocks.contentAreas.length - 1].content = path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html");
+                
                 processedBlocks.lengthTotal++;
 
                 if (uniqueBlocks.indexOf(processed.id) < 0) {
@@ -94,12 +97,11 @@ module.exports = function (grunt) {
 
                 // store partial if not already happen
                 if (options.storePartials && !isDuplicate) {
-                    grunt.file.write(path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html"), processed.content);
+                    grunt.file.write(path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html"), blockContent);
                 }
                 
-                
             });
-
+    
             grunt.verbose.writeln('');
         });
 
