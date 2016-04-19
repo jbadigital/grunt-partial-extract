@@ -83,7 +83,7 @@ module.exports = function (grunt) {
 
                 processedBlocks.contentAreas.push(processed);
                 //remove the content from processedBlocks
-                processedBlocks.contentAreas[processedBlocks.contentAreas.length - 1].content = "";
+                processedBlocks.contentAreas[processedBlocks.contentAreas.length - 1].content = path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html");
                 processedBlocks.lengthTotal++;
 
                 if (uniqueBlocks.indexOf(processed.id) < 0) {
@@ -104,7 +104,6 @@ module.exports = function (grunt) {
         });
 
         processedBlocks.lengthUnique = uniqueBlocks.length;
-        path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html")
 
         grunt.file.write(options.storage, JSON.stringify(processedBlocks, null, '\t'));
 
