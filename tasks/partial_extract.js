@@ -79,13 +79,11 @@ module.exports = function (grunt) {
 
                 // process block
                 processed.parseData(block, opts);
+                processedBlocks.contentAreas = [];
 
-                if (!processedBlocks.hasOwnProperty(processed.brand)) {
-                    processedBlocks[processed.brand] = {};
-                    processedBlocks[processed.brand].contentAreas = [];
-                }
-
-                processedBlocks[processed.brand].contentAreas.push(processed);
+                processedBlocks.contentAreas.push(processed);
+                //remove the content from processedBlocks
+                processedBlocks.contentAreas[processedBlocks.contentAreas.length - 1].content = "";
                 processedBlocks.lengthTotal++;
 
                 if (uniqueBlocks.indexOf(processed.id) < 0) {
@@ -98,12 +96,15 @@ module.exports = function (grunt) {
                 if (options.storePartials && !isDuplicate) {
                     grunt.file.write(path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html"), processed.content);
                 }
+                
+                
             });
 
             grunt.verbose.writeln('');
         });
 
         processedBlocks.lengthUnique = uniqueBlocks.length;
+        path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html")
 
         grunt.file.write(options.storage, JSON.stringify(processedBlocks, null, '\t'));
 
