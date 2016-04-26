@@ -52,16 +52,13 @@ module.exports = function (grunt) {
         };
         var uniqueBlocks = [];
 
-        grunt.log.writeln("Files", this.files)
         // Iterate over all specified file groups.
-        this.files.forEach(function (file) {
+        this.files[0].src.forEach(function (file) {
             
-            grunt.log.writeln('file: ', file.src);
-            
-            var content = grunt.util.normalizelf(grunt.file.read(file.src));
+            var content = grunt.util.normalizelf(grunt.file.read(file));
 
             if (!options.patternExtract.test(content)) {
-                grunt.log.errorlns('No partials in file ' + file.src);
+                grunt.log.errorlns('No partials in file ' + file);
                 grunt.verbose.writeln('');
 
                 return;
@@ -69,7 +66,7 @@ module.exports = function (grunt) {
 
             var blocks = getPartials(content);
 
-            grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file.src);
+            grunt.log.oklns('Found ' + blocks.length + ' partials in file ' + file);
 
             // Write blocks to separate files
             blocks.map(function (block) {
