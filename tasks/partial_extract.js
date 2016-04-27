@@ -78,7 +78,7 @@ module.exports = function (grunt) {
 
                 // process block
                 processed.parseData(block, opts);
-                processed.contentFile = options.base + '/' + options.partials + '/' + processed.options.brand + '/' + processed.name + ".html";
+                processed.contentFile = options.partials + '/' + processed.options.brand + '/' + processed.name + ".html";
                 blockContent = processed.content;
                 processed = _.omit(processed, 'content');
                 
@@ -92,7 +92,7 @@ module.exports = function (grunt) {
                     isDuplicate = true;
                 }
 
-                // store partial if not already happen
+                // store partial if not already done
                 if (options.storePartials && !isDuplicate) {
                     grunt.file.write(path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html"), blockContent);
                 }
