@@ -56,6 +56,9 @@ module.exports = function (grunt) {
         this.files[0].src.forEach(function (file) {
             
             var content = grunt.util.normalizelf(grunt.file.read(file));
+            var templateContent = content;
+            var templateContentAreas = '';
+            var templateBrand = '';
 
             if (!options.patternExtract.test(content)) {
                 grunt.log.errorlns('No partials in file ' + file);
@@ -85,6 +88,8 @@ module.exports = function (grunt) {
                 processedBlocks.contentAreas.push(processed);
                 
                 processedBlocks.lengthTotal++;
+                
+                templateBrand = processed.options.brand;
 
                 if (uniqueBlocks.indexOf(processed.id) < 0) {
                     uniqueBlocks.push(processed.id);
@@ -92,13 +97,27 @@ module.exports = function (grunt) {
                     isDuplicate = true;
                 }
 
-                // store partial if not already done
+                // store partial if not a duplicate
                 if (options.storePartials && !isDuplicate) {
                     grunt.file.write(path.resolve(options.base, options.partials, processed.options.brand, processed.name + ".html"), blockContent);
                 }
                 
             });
-    
+
+            grunt.verbose.writeln('');
+            
+            options.templateContentAreas.forEach(function(area) {
+                templateContentAreas += '<custom type="content" name="' + area + '">\n';
+            });
+            
+            // replace modules with content area code for template content
+            templateContent = templateContent.replace(options.patternExtract, '');
+            templateContent = templateContent.replace(options.templatePatternExtract, templateContentAreas);
+            
+            // write out template to file
+            grunt.file.write(path.resolve(options.base, options.templates, templateBrand + ".html"), templateContent);
+            grunt.log.oklns('Created template for ' + templateBrand + '.');
+
             grunt.verbose.writeln('');
         });
 
